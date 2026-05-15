@@ -1,0 +1,21 @@
+{
+  "name": "billing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev:all": "concurrently \"npm run dev --prefix services/api-gateway\" \"npm run dev --prefix services/identity-service\" \"npm run dev --prefix services/subscription-service\" \"npm run dev --prefix services/billing-service\" \"npm run dev --prefix services/payment-service\" \"npm run dev --prefix frontend\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "pg": "^8.20.0"
+  }
+}
