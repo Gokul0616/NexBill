@@ -19,7 +19,7 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map((stat, i) => (
-            <div key={i} className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm hover:shadow-md transition-shadow">
+            <div key={i} className="bg-white dark:bg-black p-5 rounded-xl border border-gray-200 dark:border-[#222] shadow-sm hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start mb-4">
                 <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg">
                   <stat.icon className="w-5 h-5" />
@@ -45,8 +45,8 @@ export default function Dashboard() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           
-          <div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer group">
-            <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+          <div className="bg-white dark:bg-black p-5 rounded-xl border border-gray-200 dark:border-[#222] hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer group">
+            <div className="w-8 h-8 rounded bg-gray-100 dark:bg-[#222] flex items-center justify-center mb-4">
                <Users className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             </div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Add New Customer</h3>
@@ -55,8 +55,8 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer group">
-            <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+          <div className="bg-white dark:bg-black p-5 rounded-xl border border-gray-200 dark:border-[#222] hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer group">
+            <div className="w-8 h-8 rounded bg-gray-100 dark:bg-[#222] flex items-center justify-center mb-4">
                <Repeat className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             </div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Create Subscription</h3>
@@ -65,8 +65,8 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <div className="bg-white dark:bg-[#111827] p-5 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer group">
-            <div className="w-8 h-8 rounded bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+          <div className="bg-white dark:bg-black p-5 rounded-xl border border-gray-200 dark:border-[#222] hover:border-blue-500 dark:hover:border-blue-500 transition-colors cursor-pointer group">
+            <div className="w-8 h-8 rounded bg-gray-100 dark:bg-[#222] flex items-center justify-center mb-4">
                <FileText className="w-4 h-4 text-gray-600 dark:text-gray-300" />
             </div>
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Generate Invoice</h3>

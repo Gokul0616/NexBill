@@ -58,6 +58,9 @@ app.post('/api/auth/register', async (req, res) => {
     const token = jwt.sign({ userId: rows[0].id, role: rows[0].role }, process.env.JWT_SECRET, { expiresIn: '24h' });
     res.status(201).json({ user: rows[0], token });
   } catch (err) {
+    if (err.code === '23505' && err.constraint === 'users_email_key') {
+      return res.status(400).json({ error: 'Email is already registered. Please sign in instead.' });
+    }
     res.status(500).json({ error: err.message });
   }
 });
