@@ -3,12 +3,14 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "workspaces": [
-    "frontend",
-    "services/*"
-  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "clean": "rm -rf node_modules package-lock.json services/*/node_modules services/*/package-lock.json frontend/node_modules frontend/package-lock.json",
+    "install:root": "npm install",
+    "install:services": "for d in services/*/; do (cd \"$d\" && npm install); done",
+    "install:frontend": "cd frontend && npm install",
+    "install:all": "npm run install:root && npm run install:frontend && npm run install:services",
+    "setup": "npm run clean && npm run install:all",
     "dev:all": "concurrently \"npm run dev --prefix services/api-gateway\" \"npm run dev --prefix services/identity-service\" \"npm run dev --prefix services/subscription-service\" \"npm run dev --prefix services/billing-service\" \"npm run dev --prefix services/payment-service\" \"npm run dev --prefix frontend\""
   },
   "keywords": [],

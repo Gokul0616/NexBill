@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_URL = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5000/api`;
 
 const apiClient = axios.create({
   baseURL: API_URL,
@@ -27,7 +27,8 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    // Only redirect to login if it's a 401 and NOT a login request itself
+    if (error.response && error.response.status === 401 && !error.config.url.endsWith('/auth/login')) {
       window.dispatchEvent(new CustomEvent('show-global-message', { 
         detail: { message: 'Session expired. Please login again.', type: 'error' } 
       }));

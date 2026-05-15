@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useMessage } from '../context/MessageContext';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../config/api';
@@ -16,11 +16,17 @@ export default function Register() {
   const [businessType, setBusinessType] = useState('SaaS');
   const [phone, setPhone] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  
-  const { login } = useContext(AuthContext);
+
+  const { login, token } = useContext(AuthContext);
   const { theme, setTheme } = useContext(ThemeContext);
   const { showMessage } = useMessage();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (token) {
+      navigate('/');
+    }
+  }, [token, navigate]);
 
   const handleContinueToStep2 = (e) => {
     e.preventDefault();
@@ -47,9 +53,9 @@ export default function Register() {
       return;
     }
     try {
-      const res = await apiClient.post('/auth/register', { 
-        email, 
-        password, 
+      const res = await apiClient.post('/auth/register', {
+        email,
+        password,
         name: fullName,
         company: companyName,
         business_type: businessType,
@@ -57,7 +63,7 @@ export default function Register() {
       });
       login(res.data.token);
       showMessage('Account created successfully! Welcome to NexBill.', 'success');
-      navigate('/');
+      window.location.href = '/';
     } catch (err) {
       showMessage(err.response?.data?.error || 'Registration failed', 'error');
     }

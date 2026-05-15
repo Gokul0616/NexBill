@@ -18,6 +18,7 @@ app.get('/api/plans', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM subscription.plans ORDER BY price ASC');
     res.json(rows);
   } catch (err) {
+    console.error('Error fetching plans:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -43,6 +44,7 @@ app.get('/api/subscriptions', async (req, res) => {
 
     res.json(subsWithCustomers);
   } catch (err) {
+    console.error('Error fetching subscriptions:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -69,6 +71,7 @@ app.get('/api/subscriptions/:id', async (req, res) => {
 
     res.json(sub);
   } catch (err) {
+    console.error(`Error fetching subscription ${id}:`, err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -86,6 +89,7 @@ app.post('/api/subscriptions', async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
+    console.error('Error creating subscription:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -100,8 +104,15 @@ app.delete('/api/subscriptions/:id', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'Subscription not found' });
     res.json(rows[0]);
   } catch (err) {
+    console.error(`Error cancelling subscription ${id}:`, err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {

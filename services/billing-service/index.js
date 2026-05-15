@@ -29,8 +29,15 @@ app.get('/api/invoices', async (req, res) => {
 
     res.json(invoicesWithCustomers);
   } catch (err) {
+    console.error('Error fetching invoices:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {

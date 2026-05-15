@@ -47,6 +47,12 @@ app.use(createProxyMiddleware({ pathFilter: '/api/invoices', target: billingUrl,
 // Payment Service
 app.use(createProxyMiddleware({ pathFilter: '/api/payments', target: paymentUrl, changeOrigin: true }));
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('API Gateway Error:', err);
+  res.status(500).json({ error: 'Gateway Error' });
+});
+
 app.listen(PORT, () => {
   console.log(`API Gateway running on port ${PORT}`);
 });

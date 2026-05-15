@@ -35,6 +35,7 @@ app.get('/api/customers', async (req, res) => {
     const { rows } = await pool.query('SELECT * FROM identity.customers ORDER BY created_at DESC');
     res.json(rows);
   } catch (err) {
+    console.error('Error fetching customers:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -45,6 +46,7 @@ app.get('/api/customers/:id', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ error: 'Not found' });
     res.json(rows[0]);
   } catch (err) {
+    console.error(`Error fetching customer ${req.params.id}:`, err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -58,6 +60,7 @@ app.post('/api/customers', async (req, res) => {
     );
     res.status(201).json(rows[0]);
   } catch (err) {
+    console.error('Error creating customer:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -87,6 +90,7 @@ app.post('/api/auth/register', async (req, res) => {
     if (err.code === '23505' && err.constraint === 'users_email_key') {
       return res.status(400).json({ error: 'Email is already registered. Please sign in instead.' });
     }
+    console.error('Registration error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -95,10 +99,10 @@ app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     const { rows } = await pool.query('SELECT * FROM identity.users WHERE email = $1', [email]);
-    if (rows.length === 0) return res.status(401).json({ error: 'Invalid credentials' });
+    if (rows.length === 0) return res.status(401).json({ error: 'User not found' });
 
     const isValid = await bcrypt.compare(password, rows[0].password_hash);
-    if (!isValid) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!isValid) return res.status(401).json({ error: 'Invalid password' });
 
     const token = jwt.sign(
       {
@@ -112,8 +116,15 @@ app.post('/api/auth/login', async (req, res) => {
     );
     res.json({ token, role: rows[0].role });
   } catch (err) {
+    console.error('Login error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {

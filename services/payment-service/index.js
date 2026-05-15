@@ -41,6 +41,7 @@ app.post('/api/payments/create-order', async (req, res) => {
 
     res.status(201).json({ order, transaction: rows[0] });
   } catch (err) {
+    console.error('Error creating payment order:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -71,6 +72,12 @@ app.post('/api/payments/webhook', async (req, res) => {
   } else {
     res.status(400).json({ error: 'Invalid signature' });
   }
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 app.listen(PORT, () => {

@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../config/api';
 import { AuthContext } from '../context/AuthContext';
@@ -12,10 +12,16 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useContext(AuthContext);
+  const { login, token } = useContext(AuthContext);
   const { theme, setTheme } = useContext(ThemeContext);
   const { showMessage } = useMessage();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (token) {
+      navigate('/');
+    }
+  }, [token, navigate]);
 
   const handleContinue = (e) => {
     e.preventDefault();
@@ -32,7 +38,7 @@ export default function Login() {
       const res = await apiClient.post('/auth/login', { email, password });
       login(res.data.token);
       showMessage('Logged in successfully', 'success');
-      navigate('/');
+      window.location.href = '/';
     } catch (err) {
       showMessage(err.response?.data?.error || 'Login failed', 'error');
     }

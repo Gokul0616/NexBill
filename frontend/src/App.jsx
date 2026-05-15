@@ -1,18 +1,23 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useContext } from 'react';
+import { useState, useContext, lazy, Suspense } from 'react';
 import Sidebar from './components/Sidebar';
-import Dashboard from './pages/Dashboard';
-import Customers from './pages/Customers';
-import Plans from './pages/Plans';
-import Subscriptions from './pages/Subscriptions';
-import Invoices from './pages/Invoices';
-import Login from './pages/Login';
-import Register from './pages/Register';
+
+// Lazy load pages for performance and Suspense support
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Customers = lazy(() => import('./pages/Customers'));
+const Plans = lazy(() => import('./pages/Plans'));
+const Subscriptions = lazy(() => import('./pages/Subscriptions'));
+const Invoices = lazy(() => import('./pages/Invoices'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { MessageProvider } from './context/MessageContext';
 import { ModalProvider } from './context/ModalContext';
 import GlobalModal from './components/GlobalModal';
+import LoadingScreen from './components/LoadingScreen';
+
+
 
 function ProtectedRoute({ children }) {
   const { token } = useContext(AuthContext);
@@ -20,34 +25,39 @@ function ProtectedRoute({ children }) {
     return <Navigate to="/login" replace />;
   }
   return (
-    <div className="flex h-screen bg-transparent text-gray-900 dark:text-white font-sans transition-colors duration-200">
-      <Sidebar />
-      <main className="flex-1 overflow-y-auto p-8 lg:p-12">
-        {children}
-      </main>
-    </div>
+    <Suspense fallback={<LoadingScreen />}>
+      <div className="flex h-screen bg-transparent text-gray-900 dark:text-white font-sans transition-colors duration-200">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto p-8 lg:p-12">
+          {children}
+        </main>
+      </div>
+    </Suspense>
   );
 }
 
 function App() {
+
   return (
     <ThemeProvider>
       <MessageProvider>
         <ModalProvider>
           <AuthProvider>
             <GlobalModal />
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              
-              {/* Protected Routes */}
-              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-              <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
-              <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
-              <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-            </Routes>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
+                {/* Protected Routes */}
+                <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+                <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+                <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+                <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
+                <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+              </Routes>
+            </Suspense>
           </AuthProvider>
         </ModalProvider>
       </MessageProvider>
