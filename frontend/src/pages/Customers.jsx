@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useMessage } from '../context/MessageContext';
 import apiClient from '../config/api';
-import { UserPlus, Mail, Phone, FileDigit } from 'lucide-react';
+import ButtonOutlet from '../components/ButtonOutlet';
+import { UserPlus, Mail, Phone, FileDigit, Plus } from 'lucide-react';
 
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
@@ -44,13 +45,12 @@ export default function Customers() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Customers</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Manage your clients and their billing profiles.</p>
         </div>
-        <button 
+        <ButtonOutlet 
+          label="Add Customer" 
+          icon={UserPlus} 
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 bg-[#246dff] text-white px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-600 transition-colors shadow-sm"
-        >
-          <UserPlus className="w-4 h-4" />
-          Add Customer
-        </button>
+          className="!h-[38px] !bg-[#246dff] !text-white px-4 shadow-sm"
+        />
       </div>
 
       <div className="bg-white dark:bg-black border border-gray-200 dark:border-[#222] rounded-xl overflow-hidden shadow-sm">
@@ -109,8 +109,18 @@ export default function Customers() {
                 <input type="text" className="w-full border border-gray-300 dark:border-[#333] dark:bg-[#111] dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" value={formData.gst_number} onChange={e => setFormData({...formData, gst_number: e.target.value})} />
               </div>
               <div className="flex justify-end gap-3 mt-8">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">Cancel</button>
-                <button type="submit" className="px-4 py-2 text-sm font-semibold text-white bg-[#246dff] hover:bg-blue-600 rounded-lg transition-colors">Save Customer</button>
+                <ButtonOutlet 
+                  label="Cancel" 
+                  onClick={() => setShowModal(false)} 
+                  variant="secondary" 
+                  className="px-6"
+                />
+                <ButtonOutlet 
+                  type="submit" 
+                  label="Save Customer" 
+                  variant="default" 
+                  className="px-6 !bg-[#246dff] !text-white"
+                />
               </div>
             </form>
           </div>

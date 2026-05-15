@@ -16,13 +16,13 @@ const ButtonOutlet = ({
 
     const variants = {
         default:
-            "bg-accent text-muted-foreground hover:brightness-95 dark:hover:brightness-110 hover:text-foreground border border-border shadow-sm",
+            "bg-[#246dff] text-white hover:bg-blue-600 dark:bg-[#246dff] dark:hover:bg-blue-500 shadow-sm border border-transparent",
 
         secondary:
-            "bg-gray-50 dark:bg-[#111] text-gray-900 dark:text-white hover:brightness-95 dark:hover:brightness-110 border border-gray-200 dark:border-[#333] shadow-sm",
+            "bg-white dark:bg-[#111] text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-[#1a1a1a] border border-gray-200 dark:border-[#222] shadow-sm",
 
         danger:
-            "bg-accent text-red-600 hover:brightness-95 dark:hover:brightness-110 border border-border shadow-sm"
+            "bg-red-50 dark:bg-red-900/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 border border-red-100 dark:border-red-900/20 shadow-sm"
     };
 
     const button = (
@@ -50,13 +50,6 @@ const ButtonOutlet = ({
         </button>
     );
 
-    if (title) {
-        return (
-            <CustomTooltip content={title}>
-                {button}
-            </CustomTooltip>
-        );
-    }
 
     return button;
 };

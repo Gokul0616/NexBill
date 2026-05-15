@@ -103,16 +103,17 @@ export default function Tooltip({
             pointerEvents: 'none',
           }}
           className={`
-            px-2 py-1
-            bg-gray-900 dark:bg-white
-            text-white dark:text-gray-900
-            text-[14px] font-medium
+            px-2.5 py-1.5
+            bg-gray-900 dark:bg-[#1a1a1a]
+            text-white dark:text-gray-100
+            text-[12px] font-semibold
             rounded-md
             whitespace-nowrap
-            shadow-sm
+            shadow-xl
+            border border-transparent dark:border-white/10
             transition-all
             duration-200
-            ${show ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1'}
+            ${show ? 'opacity-100 scale-100' : 'opacity-0 scale-95'}
           `}
         >
           {text}

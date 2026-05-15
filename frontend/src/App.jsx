@@ -11,6 +11,8 @@ import Register from './pages/Register';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { MessageProvider } from './context/MessageContext';
+import { ModalProvider } from './context/ModalContext';
+import GlobalModal from './components/GlobalModal';
 
 function ProtectedRoute({ children }) {
   const { token } = useContext(AuthContext);
@@ -31,20 +33,23 @@ function App() {
   return (
     <ThemeProvider>
       <MessageProvider>
-        <AuthProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            
-            {/* Protected Routes */}
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-            <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
-            <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
-            <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
-          </Routes>
-        </AuthProvider>
+        <ModalProvider>
+          <AuthProvider>
+            <GlobalModal />
+            <Routes>
+              {/* Public Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              
+              {/* Protected Routes */}
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+              <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+              <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
+              <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
+            </Routes>
+          </AuthProvider>
+        </ModalProvider>
       </MessageProvider>
     </ThemeProvider>
   );
