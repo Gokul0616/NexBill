@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useMessage } from '../context/MessageContext';
 import apiClient from '../config/api';
 import ActionButton from '../components/ActionButton';
 import { PlusCircle, Repeat } from 'lucide-react';
 
 export default function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState([]);
+  const { showMessage } = useMessage();
 
   useEffect(() => {
     fetchSubscriptions();
@@ -15,6 +17,7 @@ export default function Subscriptions() {
       const res = await apiClient.get('/subscriptions');
       setSubscriptions(res.data);
     } catch (err) {
+      showMessage('Failed to fetch subscriptions', 'error');
       console.error(err);
     }
   };

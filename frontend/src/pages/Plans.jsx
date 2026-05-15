@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useMessage } from '../context/MessageContext';
 import apiClient from '../config/api';
 import ActionButton from '../components/ActionButton';
 import { PlusCircle, Box } from 'lucide-react';
 
 export default function Plans() {
   const [plans, setPlans] = useState([]);
+  const { showMessage } = useMessage();
 
   useEffect(() => {
     fetchPlans();
@@ -15,6 +17,7 @@ export default function Plans() {
       const res = await apiClient.get('/plans');
       setPlans(res.data);
     } catch (err) {
+      showMessage('Failed to fetch plans', 'error');
       console.error(err);
     }
   };

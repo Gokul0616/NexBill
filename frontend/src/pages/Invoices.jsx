@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useMessage } from '../context/MessageContext';
 import apiClient from '../config/api';
 import ActionButton from '../components/ActionButton';
 import { PlusCircle, FileText, Download } from 'lucide-react';
 
 export default function Invoices() {
   const [invoices, setInvoices] = useState([]);
+  const { showMessage } = useMessage();
 
   useEffect(() => {
     fetchInvoices();
@@ -15,6 +17,7 @@ export default function Invoices() {
       const res = await apiClient.get('/invoices');
       setInvoices(res.data);
     } catch (err) {
+      showMessage('Failed to fetch invoices', 'error');
       console.error(err);
     }
   };

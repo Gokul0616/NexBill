@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "workspaces": [
+    "frontend",
+    "services/*"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev:all": "concurrently \"npm run dev --prefix services/api-gateway\" \"npm run dev --prefix services/identity-service\" \"npm run dev --prefix services/subscription-service\" \"npm run dev --prefix services/billing-service\" \"npm run dev --prefix services/payment-service\" \"npm run dev --prefix frontend\""

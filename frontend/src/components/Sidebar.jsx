@@ -6,12 +6,19 @@ import {
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { ThemeContext } from '../context/ThemeContext';
+import { useMessage } from '../context/MessageContext';
 import CustomTooltip from './CustomTooltip';
 
 export default function Sidebar() {
   const { logout } = useContext(AuthContext);
   const { theme, setTheme } = useContext(ThemeContext);
+  const { showMessage } = useMessage();
   const [isExpanded, setIsExpanded] = useState(true);
+
+  const handleLogout = () => {
+    logout();
+    showMessage('Logged out successfully', 'info');
+  };
 
   return (
     <div className={`relative z-[100] bg-white/60 dark:bg-black/40 backdrop-blur-xl shadow-lg border-r border-white/50 dark:border-white/10 h-screen flex flex-col flex-shrink-0 text-sm font-sans transition-all duration-300 ${isExpanded ? 'w-[240px]' : 'w-[80px]'}`}>
@@ -20,8 +27,8 @@ export default function Sidebar() {
       <div className={`p-3 ${!isExpanded && 'flex flex-col items-center'}`}>
         <div className={`flex items-center ${isExpanded ? 'justify-between' : 'justify-center'} mb-3 hover:bg-white/50 dark:hover:bg-white/5 p-1.5 rounded-lg cursor-pointer transition-colors w-full`}>
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold overflow-hidden flex-shrink-0 border border-blue-200">
-              <span className="text-xs">UB</span>
+            <div className="w-7 h-7 rounded-lg overflow-hidden flex-shrink-0 border border-blue-200 dark:border-white/20">
+              <img src="/logo.png" alt="NexBill Logo" className="w-full h-full object-cover" />
             </div>
             {isExpanded && (
               <div className="flex flex-col whitespace-nowrap overflow-hidden">
@@ -107,7 +114,7 @@ export default function Sidebar() {
             </button>
           </CustomTooltip>
           <CustomTooltip text="Logout" position="right" disabled={isExpanded}>
-            <button onClick={logout} className={`flex items-center ${isExpanded ? 'gap-3 px-2' : 'justify-center'} py-1.5 text-[13px] text-red-500 hover:text-red-600 dark:hover:text-red-400 w-full rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer whitespace-nowrap overflow-hidden`}>
+            <button onClick={handleLogout} className={`flex items-center ${isExpanded ? 'gap-3 px-2' : 'justify-center'} py-1.5 text-[13px] text-red-500 hover:text-red-600 dark:hover:text-red-400 w-full rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer whitespace-nowrap overflow-hidden`}>
               <LogOut className="w-4 h-4 flex-shrink-0" />
               {isExpanded && <span>Logout</span>}
             </button>

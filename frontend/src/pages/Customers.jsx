@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useMessage } from '../context/MessageContext';
 import apiClient from '../config/api';
 import { UserPlus, Mail, Phone, FileDigit } from 'lucide-react';
 
@@ -6,6 +7,7 @@ export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', gst_number: '' });
+  const { showMessage } = useMessage();
 
   useEffect(() => {
     fetchCustomers();
@@ -16,6 +18,7 @@ export default function Customers() {
       const res = await apiClient.get('/customers');
       setCustomers(res.data);
     } catch (err) {
+      showMessage('Failed to fetch customers', 'error');
       console.error(err);
     }
   };
@@ -26,8 +29,10 @@ export default function Customers() {
       await apiClient.post('/customers', formData);
       setShowModal(false);
       setFormData({ name: '', email: '', phone: '', gst_number: '' });
+      showMessage('Customer added successfully', 'success');
       fetchCustomers();
     } catch (err) {
+      showMessage(err.response?.data?.error || 'Failed to add customer', 'error');
       console.error(err);
     }
   };

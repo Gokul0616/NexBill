@@ -1,4 +1,5 @@
 import { useState, useContext } from 'react';
+import { useMessage } from '../context/MessageContext';
 import { useNavigate, Link } from 'react-router-dom';
 import apiClient from '../config/api';
 import { AuthContext } from '../context/AuthContext';
@@ -11,18 +12,17 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
   const { theme, setTheme } = useContext(ThemeContext);
+  const { showMessage } = useMessage();
   const navigate = useNavigate();
 
   const handleContinue = (e) => {
     e.preventDefault();
     if (!email) {
-      setError('Please enter an email address.');
+      showMessage('Please enter an email address.', 'error');
       return;
     }
-    setError('');
     setStep(2);
   };
 
@@ -31,9 +31,10 @@ export default function Login() {
     try {
       const res = await apiClient.post('/auth/login', { email, password });
       login(res.data.token);
+      showMessage('Welcome back! Login successful.', 'success');
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.error || 'Login failed');
+      showMessage(err.response?.data?.error || 'Login failed', 'error');
     }
   };
 
@@ -42,7 +43,9 @@ export default function Login() {
       {/* Left Pane - Branding */}
       <div className="hidden lg:flex w-1/2 bg-white/40 dark:bg-black/30 backdrop-blur-xl flex-col justify-between p-12 relative overflow-hidden border-r border-white/50 dark:border-white/10">
         <div className="relative z-10 flex items-center gap-2 text-gray-900 dark:text-white">
-          <div className="w-8 h-8 border border-white/50 dark:border-white/20 rounded flex items-center justify-center font-bold text-lg bg-white/50 dark:bg-black/50">NB</div>
+          <div className="w-8 h-8 border border-white/50 dark:border-white/20 rounded overflow-hidden bg-white/50 dark:bg-black/50">
+            <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
+          </div>
           <span className="text-xl font-bold tracking-tight">NexBill</span>
         </div>
         <div className="relative z-10 text-gray-900 dark:text-white">
@@ -66,8 +69,8 @@ export default function Login() {
 
           {/* Logo (Mobile only) */}
           <div className="flex justify-center mb-6 lg:hidden">
-            <div className="w-10 h-10 border border-gray-200 dark:border-[#333] rounded-lg flex items-center justify-center shadow-sm">
-              <span className="text-[#246dff] font-bold text-xl tracking-tighter">NB</span>
+            <div className="w-10 h-10 border border-gray-200 dark:border-[#333] rounded-lg overflow-hidden shadow-sm">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" />
             </div>
           </div>
 
@@ -77,11 +80,7 @@ export default function Login() {
             <p className="text-gray-500 dark:text-gray-400 font-medium">Log in to your NexBill account</p>
           </div>
 
-          {error && (
-            <div className="mb-6 p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm font-medium border border-red-100 dark:border-red-800 text-center">
-              {error}
-            </div>
-          )}
+
 
           {step === 1 ? (
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -168,13 +167,12 @@ export default function Login() {
                       placeholder="Enter your password..."
                       autoFocus
                     />
-                    <button
-                      type="button"
+                    <div
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 cursor-pointer"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
+                    </div>
                   </div>
                 </div>
 
