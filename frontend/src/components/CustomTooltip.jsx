@@ -1,21 +1,124 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
-export default function Tooltip({ children, text, position = 'right', disabled = false }) {
-  if (disabled) return <>{children}</>;
+/**
+ * CustomTooltip with Portal Support and Original Design/Transitions
+ */
+export default function Tooltip({
+  children,
+  text,
+  position = 'right',
+  disabled = false,
+  sidebar = false,
+}) {
+  const [show, setShow] = useState(false);
+  const [render, setRender] = useState(false);
+  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef(null);
+  const timerRef = useRef(null);
 
-  const positionClasses = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-2',
+  const updatePosition = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      let top, left;
+
+      if (position === 'right') {
+        top = rect.top + rect.height / 2;
+        left = rect.right + 8;
+      } else if (position === 'left') {
+        top = rect.top + rect.height / 2;
+        left = rect.left - 8;
+      } else if (position === 'top') {
+        top = rect.top - 8;
+        left = rect.left + rect.width / 2;
+      } else if (position === 'bottom') {
+        top = rect.bottom + 8;
+        left = rect.left + rect.width / 2;
+      }
+
+      setCoords({ top, left });
+    }
   };
 
+  const handleMouseEnter = () => {
+    if (disabled) return;
+    updatePosition();
+    
+    // Start rendering (for transition)
+    setRender(true);
+    
+    // Original 500ms delay for sidebar tooltips
+    timerRef.current = setTimeout(() => {
+      setShow(true);
+    }, sidebar ? 500 : 0);
+  };
+
+  const handleMouseLeave = () => {
+    clearTimeout(timerRef.current);
+    setShow(false);
+    // Remove from DOM after transition
+    setTimeout(() => setRender(false), 200);
+  };
+
+  useEffect(() => {
+    if (show) {
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+    }
+    return () => {
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+      clearTimeout(timerRef.current);
+    };
+  }, [show]);
+
+  const transformMap = {
+    right: 'translateY(-50%)',
+    left: 'translateY(-50%) translateX(-100%)',
+    top: 'translateX(-50%) translateY(-100%)',
+    bottom: 'translateX(-50%)',
+  };
+
+  if (disabled) return <>{children}</>;
+
   return (
-    <div className="group relative flex items-center justify-center">
-      {children}
-      <div className={`absolute ${positionClasses[position]} px-2 py-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-xs font-medium rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-[100] shadow-sm`}>
-        {text}
+    <>
+      <div
+        ref={triggerRef}
+        className="relative flex items-center justify-center"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {children}
       </div>
-    </div>
+
+      {render && createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            top: coords.top,
+            left: coords.left,
+            transform: transformMap[position],
+            zIndex: 99999,
+            pointerEvents: 'none',
+          }}
+          className={`
+            px-2 py-1
+            bg-gray-900 dark:bg-white
+            text-white dark:text-gray-900
+            text-[14px] font-medium
+            rounded-md
+            whitespace-nowrap
+            shadow-sm
+            transition-all
+            duration-200
+            ${show ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-1'}
+          `}
+        >
+          {text}
+        </div>,
+        document.body
+      )}
+    </>
   );
 }

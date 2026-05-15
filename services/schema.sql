@@ -15,8 +15,12 @@ CREATE TABLE IF NOT EXISTS identity.customers (
 
 CREATE TABLE IF NOT EXISTS identity.users (
     id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    company VARCHAR(255),
+    business_type VARCHAR(255),
+    phone VARCHAR(50),
     role VARCHAR(50) DEFAULT 'admin',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
