@@ -1,16 +1,91 @@
 import { useContext, useState, useRef, useEffect } from 'react';
-import { Search, Bell, HelpCircle, UserCircle, Megaphone, LogOut, User, Settings } from 'lucide-react';
+import {
+    Search, Bell, HelpCircle, UserCircle, Megaphone,
+    LogOut, User, Settings, Shield, FileText,
+    CreditCard, AlertTriangle, CheckCircle, ChevronRight,
+    ArrowRight
+} from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { useMessage } from '../context/MessageContext';
+import { useNavigate } from 'react-router-dom';
+
+const TABS = ['All', 'Payments', 'Disputes', 'Payouts'];
+
+const notifications = [
+    {
+        id: 1,
+        type: 'success',
+        title: 'Payment succeeded',
+        detail: 'from Jane Diaz',
+        time: '2 min ago',
+        amount: '$249.00',
+        amountColor: '#635bff',
+        unread: true,
+        icon: <CheckCircle size={15} />,
+    },
+    {
+        id: 2,
+        type: 'info',
+        title: 'Invoice #1048',
+        detail: 'paid successfully',
+        time: '1 hr ago',
+        amount: '$1,200.00',
+        amountColor: '#635bff',
+        unread: true,
+        icon: <FileText size={15} />,
+    },
+    {
+        id: 3,
+        type: 'warn',
+        title: 'Dispute opened',
+        detail: 'on ch_3P4kRz2eZ',
+        time: '3 hr ago',
+        amount: 'Respond by Jun 2',
+        amountColor: '#b45309',
+        unread: false,
+        icon: <AlertTriangle size={15} />,
+    },
+    {
+        id: 4,
+        type: 'muted',
+        title: 'Payout initiated',
+        detail: 'of $4,820.00',
+        time: 'Yesterday',
+        amount: 'Arrives Jun 3',
+        amountColor: '#697386',
+        unread: false,
+        icon: <CreditCard size={15} />,
+    },
+];
+
+const iconStyles = {
+    success: { bg: '#eafaf1', color: '#1a9e4e' },
+    info: { bg: '#eef2ff', color: '#635bff' },
+    warn: { bg: '#fff8e1', color: '#e6a817' },
+    muted: { bg: '#f6f9fc', color: '#697386' },
+};
+
+function getInitials(user) {
+    if (user?.name) return user.name.slice(0, 2).toUpperCase();
+    if (user?.email) return user.email.slice(0, 2).toUpperCase();
+    return 'US';
+}
 
 export default function Header() {
     const { user, logout } = useContext(AuthContext);
     const { showMessage } = useMessage();
     const [showNotifs, setShowNotifs] = useState(false);
     const [showUser, setShowUser] = useState(false);
+    const [activeTab, setActiveTab] = useState('All');
     const notifRef = useRef(null);
     const userRef = useRef(null);
+    const navigate = useNavigate();
 
+    const unreadCount = notifications.filter(n => n.unread).length;
+    const handleNotificationsClick = () => {
+        setShowNotifs(false);
+        navigate('/notifications');
+    }
     useEffect(() => {
         const handler = (e) => {
             if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifs(false);
@@ -20,14 +95,7 @@ export default function Header() {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const notifications = [
-        { id: 1, text: 'New subscription from Jane Diaz', time: '2m ago', unread: true },
-        { id: 2, text: 'Invoice #1048 was paid successfully', time: '1h ago', unread: true },
-        { id: 3, text: 'Plan "Premium" updated', time: '3h ago', unread: false },
-    ];
-
     return (
-        /* ── Same background as page, no bottom border, no shadow ── */
         <header className="flex items-center gap-4 h-[52px] px-6 flex-shrink-0 bg-white dark:bg-[#0d0d0d] border-b border-[#e3e8ee] dark:border-white/10">
 
             {/* ── Search ── */}
@@ -36,16 +104,10 @@ export default function Header() {
                 <input
                     type="text"
                     placeholder="Search..."
-                    className="
-            bg-transparent border-none outline-none
-            text-[13px] text-[#1a1f36] dark:text-white
-            placeholder-[#a3acb9] dark:placeholder-gray-500
-            w-full
-          "
+                    className="bg-transparent border-none outline-none text-[13px] text-[#1a1f36] dark:text-white placeholder-[#a3acb9] dark:placeholder-gray-500 w-full"
                 />
             </div>
 
-            {/* ── Spacer ── */}
             <div className="flex-1" />
 
             {/* ── Right side ── */}
@@ -57,7 +119,7 @@ export default function Header() {
                     <span>Feedback?</span>
                 </button>
 
-                {/* Bell with badge */}
+                {/* ── Bell ── */}
                 <div className="relative" ref={notifRef}>
                     <button
                         onClick={() => { setShowNotifs(v => !v); setShowUser(false); }}
@@ -65,50 +127,106 @@ export default function Header() {
                         aria-label="Notifications"
                     >
                         <Bell className="w-[17px] h-[17px]" />
-                        {/* Red badge — filled circle with number */}
-                        <span className="
-              absolute -top-[5px] -right-[6px]
-              min-w-[14px] h-[14px] px-[3px]
-              rounded-full bg-[#e5484d]
-              text-white text-[9px] font-bold leading-[14px]
-              flex items-center justify-center
-            ">
-                            2
-                        </span>
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-[5px] -right-[6px] min-w-[14px] h-[14px] px-[3px] rounded-full bg-[#635bff] text-white text-[9px] font-bold leading-[14px] flex items-center justify-center">
+                                {unreadCount}
+                            </span>
+                        )}
                     </button>
 
-                    {/* Dropdown */}
+                    {/* ── Notification Dropdown ── */}
                     {showNotifs && (
-                        <div className="
-              absolute right-0 top-[calc(100%+10px)] w-[300px]
-              bg-white dark:bg-[#111]
-              border border-[#e3e8ee] dark:border-white/10
-              rounded-lg shadow-xl shadow-black/10 dark:shadow-black/40
-              z-50 overflow-hidden
-            ">
+                        <div className="absolute right-0 top-[calc(100%+10px)] w-[320px] bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-[10px] shadow-[0_4px_24px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
+
+                            {/* Header */}
                             <div className="flex items-center justify-between px-4 py-3 border-b border-[#e3e8ee] dark:border-white/10">
-                                <span className="text-[13px] font-semibold text-[#1a1f36] dark:text-white">Notifications</span>
-                                <button className="text-[12px] text-[#5469d4] hover:text-[#4a5fc1] font-medium cursor-pointer">Mark all read</button>
+                                <span className="text-[13px] font-semibold tracking-tight text-[#1a1f36] dark:text-white">
+                                    Notifications
+                                </span>
+                                <button className="text-[12px] font-medium text-[#635bff] hover:text-[#4f46e5] cursor-pointer bg-none border-none">
+                                    Mark all as read
+                                </button>
                             </div>
-                            <div className="divide-y divide-[#f6f9fc] dark:divide-white/5">
-                                {notifications.map(n => (
-                                    <div key={n.id} className="flex items-start gap-3 px-4 py-3 hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer transition-colors">
-                                        <span className={`mt-[5px] w-1.5 h-1.5 rounded-full flex-shrink-0 ${n.unread ? 'bg-[#5469d4]' : 'bg-transparent'}`} />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-[13px] text-[#3c4257] dark:text-gray-200 leading-snug">{n.text}</p>
-                                            <p className="text-[11px] text-[#a3acb9] dark:text-gray-500 mt-0.5">{n.time}</p>
-                                        </div>
-                                    </div>
+
+                            {/* Tabs */}
+                            <div className="flex px-4 border-b border-[#e3e8ee] dark:border-white/10">
+                                {TABS.map(tab => (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        className={`text-[12px] font-medium px-2.5 py-[9px] border-b-2 -mb-px cursor-pointer transition-colors
+                                            ${activeTab === tab
+                                                ? 'text-[#635bff] border-[#635bff]'
+                                                : 'text-[#697386] dark:text-gray-400 border-transparent hover:text-[#3c4257] dark:hover:text-gray-200'
+                                            }`}
+                                    >
+                                        {tab}
+                                    </button>
                                 ))}
                             </div>
+
+                            {/* Items */}
+                            <div>
+                                {notifications.map(n => {
+                                    const style = iconStyles[n.type];
+                                    return (
+                                        <div
+                                            key={n.id}
+                                            className={`flex items-start gap-2.5 px-4 py-3 cursor-pointer transition-colors border-b border-[#f6f9fc] dark:border-white/5 last:border-none
+                                                ${n.unread
+                                                    ? 'bg-[#f7f6ff] dark:bg-[#635bff]/5 hover:bg-[#efedff] dark:hover:bg-[#635bff]/10'
+                                                    : 'hover:bg-[#f6f9fc] dark:hover:bg-white/5'
+                                                }`}
+                                        >
+                                            {/* Unread dot */}
+                                            <span
+                                                className="mt-[5px] w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                                style={{ background: n.unread ? '#635bff' : 'transparent' }}
+                                            />
+
+                                            {/* Icon circle */}
+                                            <div
+                                                className="w-[30px] h-[30px] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+                                                style={{ background: style.bg, color: style.color }}
+                                            >
+                                                {n.icon}
+                                            </div>
+
+                                            {/* Body */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[13px] text-[#3c4257] dark:text-gray-200 leading-snug">
+                                                    <span className="font-semibold">{n.title}</span>{' '}
+                                                    <span className="text-[#697386] dark:text-gray-400 font-normal">{n.detail}</span>
+                                                </p>
+                                                <div className="flex items-center gap-1.5 mt-0.5">
+                                                    <span className="text-[11px] text-[#a3acb9] dark:text-gray-500">{n.time}</span>
+                                                    {n.amount && (
+                                                        <>
+                                                            <span className="text-[#a3acb9] text-[11px]">·</span>
+                                                            <span className="text-[11px] font-medium" style={{ color: n.amountColor }}>
+                                                                {n.amount}
+                                                            </span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Footer */}
                             <div className="px-4 py-2.5 border-t border-[#e3e8ee] dark:border-white/10 text-center">
-                                <button className="text-[12px] text-[#5469d4] hover:text-[#4a5fc1] font-medium cursor-pointer">View all</button>
+                                <button onClick={() => handleNotificationsClick()} className="inline-flex items-center gap-1 text-[12px] font-medium text-[#635bff] hover:text-[#4f46e5] cursor-pointer">
+                                    View all notifications
+                                    <ArrowRight size={11} />
+                                </button>
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Help circle */}
+                {/* Help */}
                 <button
                     className="flex items-center justify-center text-[#697386] dark:text-gray-400 hover:text-[#3c4257] dark:hover:text-gray-200 transition-colors cursor-pointer"
                     aria-label="Help"
@@ -116,7 +234,7 @@ export default function Header() {
                     <HelpCircle className="w-[17px] h-[17px]" />
                 </button>
 
-                {/* User circle */}
+                {/* ── User / Profile ── */}
                 <div className="relative" ref={userRef}>
                     <button
                         onClick={() => { setShowUser(v => !v); setShowNotifs(false); }}
@@ -126,44 +244,111 @@ export default function Header() {
                         <UserCircle className="w-[17px] h-[17px]" />
                     </button>
 
-                    {/* User dropdown */}
+                    {/* ── Profile Dropdown ── */}
                     {showUser && (
-                        <div className="
-              absolute right-0 top-[calc(100%+10px)] w-[200px]
-              bg-white dark:bg-[#111]
-              border border-[#e3e8ee] dark:border-white/10
-              rounded-lg shadow-xl shadow-black/10 dark:shadow-black/40
-              z-50 overflow-hidden
-            ">
+                        <div className="absolute right-0 top-[calc(100%+10px)] w-[240px] bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-[10px] shadow-[0_4px_24px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
+
+                            {/* Account header */}
                             <div className="px-4 py-3 border-b border-[#e3e8ee] dark:border-white/10">
-                                <p className="text-[13px] font-semibold text-[#1a1f36] dark:text-white truncate">
-                                    {user?.name || user?.email?.split('@')[0] || 'User'}
-                                </p>
-                                <p className="text-[11px] text-[#a3acb9] dark:text-gray-500 truncate mt-0.5">
-                                    {user?.email || 'Signed in'}
-                                </p>
+                                <div className="flex items-center gap-2.5 mb-2.5">
+                                    {/* Avatar */}
+                                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white text-[12px] font-semibold flex-shrink-0"
+                                        style={{ background: 'linear-gradient(135deg, #635bff 0%, #8b5cf6 100%)' }}>
+                                        {getInitials(user)}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-[13px] font-semibold tracking-tight text-[#1a1f36] dark:text-white truncate">
+                                            {user?.name || user?.email?.split('@')[0] || 'User'}
+                                        </p>
+                                        <p className="text-[11px] text-[#a3acb9] dark:text-gray-500 truncate">
+                                            {user?.email || 'Signed in'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Badges */}
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-medium bg-[#eef2ff] text-[#635bff] px-2 py-0.5 rounded-full">
+                                        Pro plan
+                                    </span>
+                                    <span className="text-[10px] font-medium bg-[#fff8e1] text-[#b45309] px-2 py-0.5 rounded-full">
+                                        Test mode
+                                    </span>
+                                </div>
                             </div>
-                            
+
+                            {/* Main menu items */}
                             <div className="py-1">
-                                <button className="flex items-center gap-2.5 w-full text-left px-4 py-2 text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer">
-                                    <User className="w-3.5 h-3.5 text-[#697386]" />
-                                    Profile
+                                {[
+                                    { icon: <User size={14} />, label: 'Profile' },
+                                    { icon: <Settings size={14} />, label: 'Account settings' },
+                                    { icon: <Bell size={14} />, label: 'Notification preferences' },
+                                ].map(item => (
+                                    <button
+                                        key={item.label}
+                                        className="flex items-center gap-2.5 w-full text-left px-4 py-[7px] text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer"
+                                    >
+                                        <span className="text-[#697386] dark:text-gray-500">{item.icon}</span>
+                                        {item.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Security + Help */}
+                            <div className="border-t border-[#e3e8ee] dark:border-white/10 py-1">
+                                <button className="flex items-center gap-2.5 w-full text-left px-4 py-[7px] text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer">
+                                    <span className="text-[#697386] dark:text-gray-500"><Shield size={14} /></span>
+                                    Security
+                                    <span className="ml-auto text-[10px] font-medium text-[#697386] bg-[#f6f9fc] dark:bg-white/10 dark:text-gray-400 px-1.5 py-0.5 rounded">
+                                        2FA on
+                                    </span>
                                 </button>
-                                <button className="flex items-center gap-2.5 w-full text-left px-4 py-2 text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer">
-                                    <Settings className="w-3.5 h-3.5 text-[#697386]" />
-                                    Account settings
+                                <button className="flex items-center gap-2.5 w-full text-left px-4 py-[7px] text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer">
+                                    <span className="text-[#697386] dark:text-gray-500"><HelpCircle size={14} /></span>
+                                    Help & support
                                 </button>
-                                
-                                <div className="border-t border-[#e3e8ee] dark:border-white/10 my-1" />
-                                
-                                <button 
+                            </div>
+
+                            {/* Switch account */}
+                            <div className="border-t border-[#e3e8ee] dark:border-white/10 pb-1 pt-0.5">
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.07em] text-[#a3acb9] dark:text-gray-500 px-4 py-2">
+                                    Switch account
+                                </p>
+
+                                {/* Active account */}
+                                <div className="flex items-center gap-2 px-4 py-[7px] cursor-pointer hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors">
+                                    <span className="w-2 h-2 rounded-full bg-[#1a9e4e] flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[12px] font-medium text-[#3c4257] dark:text-gray-200 truncate">
+                                            {user?.name || 'Main account'}
+                                        </p>
+                                        <p className="text-[10px] text-[#a3acb9] dark:text-gray-500">acct_1Pz84kRzJL</p>
+                                    </div>
+                                    <ChevronRight size={12} className="text-[#635bff]" />
+                                </div>
+
+                                {/* Second account */}
+                                <div className="flex items-center gap-2 px-4 py-[7px] cursor-pointer hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors">
+                                    <span className="w-2 h-2 rounded-full bg-[#e3e8ee] dark:bg-white/20 flex-shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[12px] font-medium text-[#3c4257] dark:text-gray-200 truncate">
+                                            Sandbox
+                                        </p>
+                                        <p className="text-[10px] text-[#a3acb9] dark:text-gray-500">acct_1Rq72mXzAB</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Sign out */}
+                            <div className="border-t border-[#e3e8ee] dark:border-white/10 py-1">
+                                <button
                                     onClick={() => {
                                         logout();
                                         showMessage('Logged out successfully', 'info');
                                     }}
-                                    className="flex items-center gap-2.5 w-full text-left px-4 py-2 text-[13px] text-[#e5484d] transition-colors hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer"
+                                    className="flex items-center gap-2.5 w-full text-left px-4 py-[7px] text-[13px] text-[#e5484d] transition-colors hover:bg-red-50 dark:hover:bg-red-900/10 cursor-pointer"
                                 >
-                                    <LogOut className="w-3.5 h-3.5" />
+                                    <LogOut size={14} />
                                     Sign out
                                 </button>
                             </div>

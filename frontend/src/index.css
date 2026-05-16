@@ -26,4 +26,52 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
+  .scrollbar-slim {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(120, 120, 140, 0.45) transparent;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-track {
+    background: transparent;
+    border-radius: 9999px;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom,
+        rgba(140, 140, 160, 0.45),
+        rgba(100, 100, 120, 0.55));
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    transition: all 0.2s ease;
+  }
+
+  .scrollbar-slim::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom,
+        rgba(120, 120, 150, 0.75),
+        rgba(90, 90, 120, 0.85));
+  }
+
+  /* Dark mode adaptation */
+  .dark .scrollbar-slim {
+    scrollbar-color: rgba(180, 180, 220, 0.35) transparent;
+  }
+
+  .dark .scrollbar-slim::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom,
+        rgba(180, 180, 220, 0.28),
+        rgba(120, 120, 180, 0.38));
+  }
+
+  .dark .scrollbar-slim::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom,
+        rgba(200, 200, 255, 0.5),
+        rgba(140, 140, 220, 0.6));
+  }
 }

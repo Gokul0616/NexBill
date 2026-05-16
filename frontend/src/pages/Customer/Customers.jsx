@@ -4,6 +4,7 @@ import { useModal } from '../../context/ModalContext';
 import apiClient from '../../config/api';
 import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ButtonOutlet from '../../components/ButtonOutlet';
 
 // ── Customer Form ─────────────────────────────────────────────────────────────
 function CustomerForm({ onSubmit, initialData = {}, onCancel }) {
@@ -34,14 +35,8 @@ function CustomerForm({ onSubmit, initialData = {}, onCancel }) {
       {field('Phone', 'phone', 'text', '+91 98765 43210', true)}
       {field('GST Number (Optional)', 'gst_number', 'text', '22AAAAA0000A1Z5')}
       <div className="flex justify-end gap-2 pt-4 border-t border-[#e3e8ee] dark:border-white/10">
-        <button type="button" onClick={onCancel}
-          className="px-4 py-[7px] text-[13px] font-medium text-[#3c4257] dark:text-gray-300 border border-[#e3e8ee] dark:border-white/10 rounded-md hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors">
-          Cancel
-        </button>
-        <button type="submit"
-          className="px-4 py-[7px] text-[13px] font-medium text-white bg-[#5469d4] hover:bg-[#4a5fc1] rounded-md transition-colors">
-          Save customer
-        </button>
+        <ButtonOutlet label="Cancel" onClick={onCancel} variant="secondary" />
+        <ButtonOutlet label="Save customer" onClick={onSubmit} variant="default" />
       </div>
     </form>
   );
