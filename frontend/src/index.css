@@ -9,8 +9,21 @@
   * {
     font-family: 'Inter', sans-serif !important;
   }
-  
+
   body {
     @apply bg-gradient-to-br from-[#f4f7ff] via-[#fcfdff] to-[#eff4ff] dark:from-[#0a0a1a] dark:via-black dark:to-[#0a0a1a] text-gray-900 dark:text-gray-100 min-h-screen bg-fixed;
+  }
+}
+
+@layer utilities {
+
+  /* Hide scrollbar but keep scroll functionality */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

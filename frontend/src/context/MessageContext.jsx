@@ -139,7 +139,7 @@ export const MessageProvider = ({ children }) => {
                                 )}
                                 <button
                                     onClick={() => dismissMessage(msg.id)}
-                                    className={`p-1 rounded-md transition-colors ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-400'
+                                    className={`p-1 rounded-md cursor-pointer transition-colors ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-400'
                                         } `}
                                 >
                                     <X className="w-4 h-4" />
