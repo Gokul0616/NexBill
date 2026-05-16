@@ -3,11 +3,13 @@ import {
     Search, Bell, HelpCircle, UserCircle, Megaphone,
     LogOut, User, Settings, Shield, FileText,
     CreditCard, AlertTriangle, CheckCircle, ChevronRight,
-    ArrowRight
+    ArrowRight, Globe, Monitor
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { useMessage } from '../context/MessageContext';
 import { useNavigate } from 'react-router-dom';
+import NotificationDrawer from './NotificationDrawer';
+
 
 const TABS = ['All', 'Payments', 'Disputes', 'Payouts'];
 
@@ -79,13 +81,16 @@ export default function Header() {
     const [activeTab, setActiveTab] = useState('All');
     const notifRef = useRef(null);
     const userRef = useRef(null);
+    const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
     const navigate = useNavigate();
+
 
     const unreadCount = notifications.filter(n => n.unread).length;
     const handleNotificationsClick = () => {
         setShowNotifs(false);
-        navigate('/notifications');
+        setIsNotifDrawerOpen(true);
     }
+
     useEffect(() => {
         const handler = (e) => {
             if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotifs(false);
@@ -246,7 +251,7 @@ export default function Header() {
 
                     {/* ── Profile Dropdown ── */}
                     {showUser && (
-                        <div className="absolute right-0 top-[calc(100%+10px)] w-[240px] bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-[10px] shadow-[0_4px_24px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] z-50 overflow-hidden">
+                        <div className="absolute right-0 top-[calc(100%+10px)] w-[240px] bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-[10px] shadow-[0_4px_24px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] z-50">
 
                             {/* Account header */}
                             <div className="px-4 py-3 border-b border-[#e3e8ee] dark:border-white/10">
@@ -280,23 +285,61 @@ export default function Header() {
                             {/* Main menu items */}
                             <div className="py-1">
                                 {[
-                                    { icon: <User size={14} />, label: 'Profile' },
-                                    { icon: <Settings size={14} />, label: 'Account settings' },
-                                    { icon: <Bell size={14} />, label: 'Notification preferences' },
+                                    { icon: <User size={14} />, label: 'Profile', path: '/account?tab=profile' },
+                                    {
+                                        icon: <Settings size={14} />,
+                                        label: 'Account settings',
+                                        path: '/account',
+                                        submenu: [
+                                            { id: 'profile', label: 'Profile', icon: <User size={12} /> },
+                                            { id: 'security', label: 'Security', icon: <Shield size={12} /> },
+                                            { id: 'preferences', label: 'Preferences', icon: <Globe size={12} /> },
+                                        ]
+                                    },
+                                    { icon: <Bell size={14} />, label: 'Notification preferences', path: '/account?tab=preferences' },
                                 ].map(item => (
-                                    <button
-                                        key={item.label}
-                                        className="flex items-center gap-2.5 w-full text-left px-4 py-[7px] text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer"
-                                    >
-                                        <span className="text-[#697386] dark:text-gray-500">{item.icon}</span>
-                                        {item.label}
-                                    </button>
+                                    <div key={item.label} className="relative group/item">
+                                        <button
+                                            onClick={() => {
+                                                navigate(item.path);
+                                                setShowUser(false);
+                                            }}
+                                            className="flex items-center gap-2.5 w-full text-left px-4 py-[7px] text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer"
+                                        >
+                                            <span className="text-[#697386] dark:text-gray-500">{item.icon}</span>
+                                            {item.label}
+                                            {item.submenu && <ChevronRight size={12} className="ml-auto text-[#a3acb9]" />}
+                                        </button>
+
+                                        {/* Submenu */}
+                                        {item.submenu && (
+                                            <div className="absolute top-0 right-full mr-1 w-[180px] py-1 bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-[10px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] opacity-0 invisible group-hover/item:opacity-100 group-hover/item:visible transition-all duration-200 translate-x-2 group-hover/item:translate-x-0">
+                                                {item.submenu.map(sub => (
+                                                    <button
+                                                        key={sub.id}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/account?tab=${sub.id}`);
+                                                            setShowUser(false);
+                                                        }}
+                                                        className="flex items-center gap-2.5 w-full text-left px-3 py-[6px] text-[12px] text-[#3c4257] dark:text-gray-300 hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer transition-colors"
+                                                    >
+                                                        <span className="text-[#697386] dark:text-gray-500">{sub.icon}</span>
+                                                        {sub.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 ))}
                             </div>
 
                             {/* Security + Help */}
                             <div className="border-t border-[#e3e8ee] dark:border-white/10 py-1">
-                                <button className="flex items-center gap-2.5 w-full text-left px-4 py-[7px] text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer">
+                                <button
+                                    onClick={() => { navigate('/account'); setShowUser(false); }}
+                                    className="flex items-center gap-2.5 w-full text-left px-4 py-[7px] text-[13px] text-[#3c4257] dark:text-gray-300 transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer"
+                                >
                                     <span className="text-[#697386] dark:text-gray-500"><Shield size={14} /></span>
                                     Security
                                     <span className="ml-auto text-[10px] font-medium text-[#697386] bg-[#f6f9fc] dark:bg-white/10 dark:text-gray-400 px-1.5 py-0.5 rounded">
@@ -357,6 +400,11 @@ export default function Header() {
                 </div>
 
             </div>
+            <NotificationDrawer
+                isOpen={isNotifDrawerOpen}
+                onClose={() => setIsNotifDrawerOpen(false)}
+            />
         </header>
+
     );
 }

@@ -4,13 +4,13 @@ const db = require('@nexbill/db');
 
 class AuthService {
     async registerUser(data) {
-        const { email, password, name, company, business_type, phone } = data;
+        const { email, password, name, company, business_type, country, phone } = data;
         const hashedPassword = await bcrypt.hash(password, 10);
         
         try {
             const { rows } = await db.query(
-                'INSERT INTO identity.users (email, password_hash, name, company, business_type, phone) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, role, name',
-                [email, hashedPassword, name, company, business_type, phone]
+                'INSERT INTO identity.users (email, password_hash, name, company, business_type, country, phone) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, email, role, name',
+                [email, hashedPassword, name, company, business_type, country, phone]
             );
             
             const user = rows[0];

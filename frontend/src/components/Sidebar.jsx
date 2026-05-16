@@ -1,8 +1,9 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   Bell, LayoutDashboard, Users, CreditCard, Repeat, FileText,
   Settings, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen,
-  ChevronDown, Code2, Link2, Package, BarChart2
+  ChevronDown, Code2, Link2, Package, BarChart2, Building2, Palette,
+  ChevronRight
 } from 'lucide-react';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
@@ -16,6 +17,10 @@ export default function Sidebar() {
   const { showMessage } = useMessage();
   const [isExpanded, setIsExpanded] = useState(true);
   const [testData, setTestData] = useState(false);
+  const [hoveredSubmenu, setHoveredSubmenu] = useState(null); // { id, top }
+  const [closeTimeout, setCloseTimeout] = useState(null);
+  const navigate = useNavigate();
+
 
   const handleLogout = () => {
     logout();
@@ -42,7 +47,7 @@ export default function Sidebar() {
         : 'text-[#3c4257] dark:text-gray-400 font-normal hover:bg-[#f6f9fc] dark:hover:bg-white/5',
     ].join(' ');
 
-  const getIconCls = (isActive) => 
+  const getIconCls = (isActive) =>
     `w-[15.5px] h-[15.5px] flex-shrink-0 transition-colors ${isActive ? 'text-[#5469d4]' : 'text-[#697386] dark:text-gray-500'}`;
 
   return (
@@ -57,8 +62,8 @@ export default function Sidebar() {
     >
       {/* ── Logo / Workspace ── */}
       <div className={`flex-shrink-0 ${isExpanded ? 'px-4 pt-4 pb-3' : 'px-2 pt-4 pb-3 flex justify-center'}`}>
-        <CustomTooltip text="NexBill" position="right" disabled={isExpanded} sidebar>
-          <button className={[
+        <CustomTooltip text={user?.name || 'User'} position="right" disabled={isExpanded} sidebar>
+          <button onClick={() => navigate(`/account`)} className={[
             'flex items-center rounded-md transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer',
             isExpanded ? 'gap-2 px-1 py-1 w-full' : 'p-1',
           ].join(' ')}>
@@ -80,7 +85,7 @@ export default function Sidebar() {
                 </span>
               </div>
             )}
-            {isExpanded && <ChevronDown className="w-3.5 h-3.5 text-[#8792a2] flex-shrink-0 ml-1" />}
+            {/* {isExpanded && <ChevronDown className="w-3.5 h-3.5 text-[#8792a2] flex-shrink-0 ml-1" />} */}
           </button>
         </CustomTooltip>
       </div>
@@ -97,6 +102,18 @@ export default function Sidebar() {
               <>
                 <LayoutDashboard className={getIconCls(isActive)} />
                 {isExpanded && <span>Dashboard</span>}
+              </>
+            )}
+          </NavLink>
+        </CustomTooltip>
+
+        {/* Notifications */}
+        <CustomTooltip text="Notifications" position="right" disabled={isExpanded} sidebar>
+          <NavLink to="/notifications" className={iconNavClass}>
+            {({ isActive }) => (
+              <>
+                <Bell className={getIconCls(isActive)} />
+                {isExpanded && <span>Notifications</span>}
               </>
             )}
           </NavLink>
@@ -244,16 +261,33 @@ export default function Sidebar() {
             </CustomTooltip>
           )}
 
-          <CustomTooltip text="Settings" position="right" disabled={isExpanded} sidebar>
-            <NavLink to="/settings" className={iconNavClass}>
-              {({ isActive }) => (
-                <>
-                  <Settings className={getIconCls(isActive)} />
-                  {isExpanded && <span>Settings</span>}
-                </>
-              )}
-            </NavLink>
-          </CustomTooltip>
+          <div
+            className="relative"
+            onMouseEnter={(e) => {
+              if (closeTimeout) clearTimeout(closeTimeout);
+              const rect = e.currentTarget.getBoundingClientRect();
+              setHoveredSubmenu({ id: 'settings', top: rect.top });
+            }}
+            onMouseLeave={() => {
+              const timeout = setTimeout(() => setHoveredSubmenu(null), 150);
+              setCloseTimeout(timeout);
+            }}
+          >
+
+            <CustomTooltip text="Settings" position="right" disabled={isExpanded} sidebar>
+              <NavLink to="/settings" className={iconNavClass}>
+                {({ isActive }) => (
+                  <>
+                    <Settings className={getIconCls(isActive)} />
+                    {isExpanded && <span>Settings</span>}
+                    {isExpanded && <ChevronRight size={12} className="ml-auto text-[#a3acb9] opacity-0 group-hover:opacity-100 transition-opacity" />}
+                  </>
+                )}
+              </NavLink>
+            </CustomTooltip>
+          </div>
+
+
         </div>
       </div>
 
@@ -309,6 +343,37 @@ export default function Sidebar() {
           </button>
         </CustomTooltip>
       </div>
+      {/* Fixed Submenu Overlay */}
+      {hoveredSubmenu && (
+        <div
+          className="fixed py-1 bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-[10px] shadow-[0_4px_24px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.4)] z-[9999] w-[180px] transition-all duration-200  group-hover/item:translate-x-0"
+          style={{
+            top: hoveredSubmenu.top,
+            left: isExpanded ? 220 : 52 // Flush with sidebar edge
+          }}
+          onMouseEnter={() => {
+            if (closeTimeout) clearTimeout(closeTimeout);
+          }}
+          onMouseLeave={() => setHoveredSubmenu(null)}
+        >
+
+          {hoveredSubmenu.id === 'settings' && [
+            { id: 'general', label: 'General', icon: <Building2 size={12} /> },
+            { id: 'branding', label: 'Branding', icon: <Palette size={12} /> },
+            { id: 'billing', label: 'Billing', icon: <CreditCard size={12} /> },
+            { id: 'team', label: 'Team', icon: <Users size={12} /> },
+          ].map(sub => (
+            <NavLink
+              key={sub.id}
+              to={`/settings?tab=${sub.id}`}
+              className="flex items-center gap-2.5 w-full text-left px-3 py-[7px] text-[12px] text-[#3c4257] dark:text-gray-300 hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors"
+            >
+              <span className="text-[#697386] dark:text-gray-500">{sub.icon}</span>
+              {sub.label}
+            </NavLink>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

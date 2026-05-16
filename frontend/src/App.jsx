@@ -12,18 +12,39 @@ const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
 const CustomerDetail = lazy(() => import('./pages/Customer/CustomerDetails'));
 const Notifications = lazy(() => import('./pages/Notifications'));
+const WorkspaceSettings = lazy(() => import('./pages/Settings/WorkspaceSettings'));
+const UserSettings = lazy(() => import('./pages/Settings/UserSettings'));
 const NotFound = lazy(() => import('./components/NotFound'));
+
 
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { MessageProvider } from './context/MessageContext';
 import { ModalProvider } from './context/ModalContext';
+import { BannerProvider, useBanner } from './context/BannerContext';
 import GlobalModal from './components/GlobalModal';
+import GlobalBanner from './components/GlobalBanner';
 import LoadingScreen from './components/LoadingScreen';
+import { useEffect } from 'react';
+
+
 
 
 function ProtectedRoute({ children }) {
   const { token } = useContext(AuthContext);
+  const { showBanner } = useBanner();
+
+  useEffect(() => {
+    if (token) {
+      showBanner(
+        'test-mode',
+        'Your account is currently in test mode. Live payments are disabled.',
+        'warning',
+        { label: 'Activate account', onClick: () => alert('Redirecting to activation...') }
+      );
+    }
+  }, [token, showBanner]);
+
   if (!token) return <Navigate to="/login" replace />;
 
   return (
@@ -35,9 +56,12 @@ function ProtectedRoute({ children }) {
 
         {/* Right column */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden bg-[#f6f9fc] dark:bg-[#0f0f10]">
+          {/* Banner */}
+          <GlobalBanner />
 
           {/* Header */}
           <Header />
+
 
           {/* Scrollable page — soft neutral in light, near-black in dark */}
           <main className="flex-1 overflow-y-auto px-8 py-6 lg:px-10 lg:py-8 scrollbar-slim bg-[#f6f9fc] dark:bg-[#0f0f10]">
@@ -55,15 +79,18 @@ function App() {
     <ThemeProvider>
       <MessageProvider>
         <ModalProvider>
-          <AuthProvider>
-            <GlobalModal />
-            <Suspense fallback={<LoadingScreen fullScreen={true} />}>
-              <Routes>
-                {/* Public routes */}
+          <BannerProvider>
+            <AuthProvider>
+              <GlobalModal />
+
+              <Suspense fallback={<LoadingScreen fullScreen={true} />}>
+                <Routes>
+                  {/* Public / Full-screen routes */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/404" element={<NotFound />} />
 
-                {/* Protected routes */}
+                {/* Protected routes (with App Chrome) */}
                 <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
                 <Route path="/customers/:id" element={<ProtectedRoute><CustomerDetail /></ProtectedRoute>} />
@@ -71,12 +98,15 @@ function App() {
                 <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
                 <Route path="/invoices" element={<ProtectedRoute><Invoices /></ProtectedRoute>} />
                 <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
+                <Route path="/account" element={<ProtectedRoute><UserSettings /></ProtectedRoute>} />
 
-                {/* 404 */}
-                <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
-              </Routes>
-            </Suspense>
-          </AuthProvider>
+                {/* 404 Catch-all */}
+                <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </AuthProvider>
+          </BannerProvider>
         </ModalProvider>
       </MessageProvider>
     </ThemeProvider>

@@ -1,4 +1,7 @@
 import { Users, CreditCard, FileText, Repeat, ArrowUpRight, ArrowDownRight, Plus, ChevronDown, MoreHorizontal } from 'lucide-react';
+import { useEffect } from 'react';
+import { useBanner } from '../context/BannerContext';
+
 
 // ── Sparkline SVG ─────────────────────────────────────────────────────────────
 function Sparkline({ data, color = '#5469d4', positive = true }) {
@@ -94,6 +97,7 @@ function StatCard({ title, value, change, spark, color }) {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function Dashboard() {
   return (
+
     <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans">
 
       {/* ── Page header ── */}

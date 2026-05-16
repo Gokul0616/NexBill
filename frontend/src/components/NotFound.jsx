@@ -1,5 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
+import ButtonOutlet from './ButtonOutlet';
 
 const QUICK_LINKS = [
     { label: 'Customers', to: '/customers' },
@@ -12,8 +13,8 @@ export default function NotFound() {
     const navigate = useNavigate();
 
     return (
-        <div className="flex items-center justify-center min-h-full">
-            <div className="text-center max-w-md w-full">
+        <div className="flex items-center justify-center min-h-screen bg-white dark:bg-[#0a0a0a]">
+            <div className="text-center max-w-md w-full px-6">
 
                 {/* Error label */}
                 <p className="text-[11px] font-bold uppercase tracking-widest text-[#246dff] mb-4">
@@ -38,18 +39,16 @@ export default function NotFound() {
 
                 {/* CTAs */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <button
+                    <ButtonOutlet
                         onClick={() => navigate(-1)}
-                        className="w-full sm:w-auto px-5 py-2 text-sm font-medium border border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-300 rounded hover:bg-gray-100 dark:hover:bg-[#1a1a1a] transition-colors"
-                    >
-                        Go back
-                    </button>
-                    <Link
-                        to="/"
-                        className="w-full sm:w-auto px-5 py-2 text-sm font-medium bg-[#246dff] text-white rounded hover:bg-[#1a5fdd] transition-colors"
-                    >
-                        Back to dashboard
-                    </Link>
+                        variant='secondary'
+                        label={'Go Back'}
+                    />
+                    <ButtonOutlet
+                        onClick={() => navigate('/')}
+                        variant='default'
+                        label={'Back to dashboard'}
+                    />
                 </div>
 
                 {/* Quick links */}

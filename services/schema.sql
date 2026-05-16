@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS identity.users (
     password_hash VARCHAR(255) NOT NULL,
     company VARCHAR(255),
     business_type VARCHAR(255),
+    country VARCHAR(255),
     phone VARCHAR(50),
     role VARCHAR(50) DEFAULT 'admin',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

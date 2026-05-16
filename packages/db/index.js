@@ -101,7 +101,11 @@ class Database {
                     const eqMatch = part.match(/(\w+)\s*=\s*\$(\d+)/);
                     if (eqMatch) {
                         const field = eqMatch[1];
-                        const val = params[parseInt(eqMatch[2]) - 1];
+                        let val = params[parseInt(eqMatch[2]) - 1];
+                        // Auto-cast numeric IDs if possible
+                        if ((field === 'id' || field.endsWith('_id')) && !isNaN(val) && val !== null) {
+                            val = Number(val);
+                        }
                         filter[field] = val;
                     }
                 });
@@ -185,7 +189,12 @@ class Database {
             let filter = {};
             const eqMatch = whereMatch[1].match(/(\w+)\s*=\s*\$(\d+)/);
             if (eqMatch) {
-                filter[eqMatch[1]] = params[parseInt(eqMatch[2]) - 1];
+                const field = eqMatch[1];
+                let val = params[parseInt(eqMatch[2]) - 1];
+                if ((field === 'id' || field.endsWith('_id')) && !isNaN(val) && val !== null) {
+                    val = Number(val);
+                }
+                filter[field] = val;
             }
 
             await collection.updateOne(filter, { $set: updateFields });

@@ -27,6 +27,17 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Redirect to 404 if resource not found (via status code or error message)
+    const isNotFound = error.response && (
+      error.response.status === 404 || 
+      error.response.data?.code === 'NOT_FOUND' ||
+      error.response.data?.message?.toLowerCase().includes('not found')
+    );
+
+    if (isNotFound) {
+      window.location.href = '/404';
+    }
+
     // Only redirect to login if it's a 401 and NOT a login request itself
     if (error.response && error.response.status === 401 && !error.config.url.endsWith('/auth/login')) {
       window.dispatchEvent(new CustomEvent('show-global-message', { 
@@ -35,6 +46,7 @@ apiClient.interceptors.response.use(
       localStorage.removeItem('token');
       window.location.href = '/login';
     }
+
     return Promise.reject(error);
   }
 );
