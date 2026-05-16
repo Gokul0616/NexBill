@@ -1,7 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import {
   Bell, LayoutDashboard, Users, CreditCard, Repeat, FileText,
-  Settings, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen
+  Settings, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen,
+  ChevronDown, Code2, Link2, Package, BarChart2
 } from 'lucide-react';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
@@ -14,174 +15,297 @@ export default function Sidebar() {
   const { theme, setTheme } = useContext(ThemeContext);
   const { showMessage } = useMessage();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [testData, setTestData] = useState(false);
 
   const handleLogout = () => {
     logout();
     showMessage('Logged out successfully', 'info');
   };
 
-  const navLinkClass = (isActive) =>
-    `flex items-center ${isExpanded ? 'gap-3 px-2' : 'justify-center'} py-1.5 text-[13px] rounded transition-colors whitespace-nowrap w-full ${isActive
-      ? 'text-gray-900 dark:text-white font-bold bg-white/80 dark:bg-[#222]'
-      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-white/50 dark:hover:bg-[#111] font-medium'
-    }`;
+  // Top-level nav item with icon
+  const iconNavClass = ({ isActive }) =>
+    [
+      'flex items-center w-full rounded-[5px] transition-all duration-200 text-[13.5px]',
+      isExpanded ? 'gap-2.5 px-2 py-[5px]' : 'justify-center px-0 py-[7.5px]',
+      isActive
+        ? `text-[#5469d4] font-semibold ${!isExpanded ? 'bg-[#5469d4]/10 dark:bg-[#5469d4]/20 shadow-[inset_3px_0_0_#5469d4]' : ''}`
+        : 'text-[#3c4257] dark:text-gray-300 font-normal hover:bg-[#f6f9fc] dark:hover:bg-white/5',
+    ].join(' ');
+
+  // Sub-item (indented, no icon) — expanded only
+  const subNavClass = ({ isActive }) =>
+    [
+      'flex items-center w-full rounded-[5px] transition-colors duration-100 text-[13.5px]',
+      'pl-[30px] pr-2 py-[4px]',
+      isActive
+        ? 'text-[#5469d4] font-semibold'
+        : 'text-[#3c4257] dark:text-gray-400 font-normal hover:bg-[#f6f9fc] dark:hover:bg-white/5',
+    ].join(' ');
+
+  const getIconCls = (isActive) => 
+    `w-[15.5px] h-[15.5px] flex-shrink-0 transition-colors ${isActive ? 'text-[#5469d4]' : 'text-[#697386] dark:text-gray-500'}`;
 
   return (
     <div
-      className={`
-        relative z-[100]
-        bg-white/60 dark:bg-black/40
-        backdrop-blur-xl shadow-lg
-        border-r border-white/50 dark:border-white/10
-        h-screen flex flex-col flex-shrink-0
-        text-sm font-sans
-        transition-all duration-300
-        ${isExpanded ? 'w-[240px]' : 'w-[56px]'}
-      `}
+      className={[
+        'relative z-[100] h-screen flex flex-col flex-shrink-0',
+        'bg-white dark:bg-[#0d0d0d]',
+        'border-r border-[#e3e8ee] dark:border-white/10',
+        'transition-all duration-300',
+        isExpanded ? 'w-[220px]' : 'w-[52px]',
+      ].join(' ')}
     >
-      {/* Top Profile Section */}
-      <div className={`${isExpanded ? 'p-3' : 'p-2 flex flex-col items-center'}`}>
-        <div className={`flex items-center ${isExpanded ? 'justify-between px-1.5' : 'justify-center'} mb-3 hover:bg-white/50 dark:hover:bg-white/5 py-1.5 rounded-lg cursor-pointer transition-all w-full`}>
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-sm overflow-hidden flex-shrink-0 border border-white/50 dark:border-white/10 bg-gray-900 dark:bg-white flex items-center justify-center relative shadow-lg transition-colors">
-              <span className="text-[14px] font-bold text-white dark:text-gray-900 uppercase leading-none">
-                {user?.name?.[0] || user?.email?.[0] || 'U'}
-              </span>
+      {/* ── Logo / Workspace ── */}
+      <div className={`flex-shrink-0 ${isExpanded ? 'px-4 pt-4 pb-3' : 'px-2 pt-4 pb-3 flex justify-center'}`}>
+        <CustomTooltip text="NexBill" position="right" disabled={isExpanded} sidebar>
+          <button className={[
+            'flex items-center rounded-md transition-colors hover:bg-[#f6f9fc] dark:hover:bg-white/5 cursor-pointer',
+            isExpanded ? 'gap-2 px-1 py-1 w-full' : 'p-1',
+          ].join(' ')}>
+            <div className="w-7 h-7 rounded-[6px] bg-gray-900 dark:bg-white flex items-center justify-center flex-shrink-0 overflow-hidden">
+              <img
+                src="/logo.png"
+                alt=""
+                className="w-full h-full object-cover"
+                onError={e => { e.currentTarget.style.display = 'none'; }}
+              />
             </div>
             {isExpanded && (
-              <div className="flex flex-col whitespace-nowrap overflow-hidden min-w-0">
-                <span className="text-[13px] font-bold text-gray-900 dark:text-gray-100 leading-tight truncate">
-                  {user?.name || user?.email?.split('@')[0] || 'User'}
+              <div className="flex flex-col min-w-0 flex-1 text-left">
+                <span className="text-[13px] font-bold text-[#1a1f36] dark:text-white truncate">
+                  {user?.name || 'User'}
                 </span>
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 font-medium truncate">
-                  {user?.email || user?.sub || 'Signed in'}
+                <span className="text-[11px] text-[#697386] dark:text-gray-400 truncate">
+                  {user?.email || 'user@example.com'}
                 </span>
               </div>
             )}
-          </div>
+            {isExpanded && <ChevronDown className="w-3.5 h-3.5 text-[#8792a2] flex-shrink-0 ml-1" />}
+          </button>
+        </CustomTooltip>
+      </div>
+
+      {/* ── Nav ── */}
+      <div
+        className={`flex-1 overflow-y-auto ${isExpanded ? 'px-3' : 'px-2'} pb-4`}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+      >
+        {/* Dashboard */}
+        <CustomTooltip text="Dashboard" position="right" disabled={isExpanded} sidebar>
+          <NavLink to="/" end className={iconNavClass}>
+            {({ isActive }) => (
+              <>
+                <LayoutDashboard className={getIconCls(isActive)} />
+                {isExpanded && <span>Dashboard</span>}
+              </>
+            )}
+          </NavLink>
+        </CustomTooltip>
+
+        {/* ── Group 1: Customers & billing ── */}
+        <div className="mt-4">
+          <CustomTooltip text="Customers" position="right" disabled={isExpanded} sidebar>
+            <NavLink to="/customers" className={iconNavClass}>
+              {({ isActive }) => (
+                <>
+                  <Users className={getIconCls(isActive)} />
+                  {isExpanded && <span>Customers</span>}
+                </>
+              )}
+            </NavLink>
+          </CustomTooltip>
+
           {isExpanded && (
-            <CustomTooltip text="Notifications" position="right">
-              <button className="p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 flex-shrink-0">
-                <Bell className="w-4 h-4" />
+            <>
+              <NavLink to="/subscriptions" className={subNavClass}>
+                Subscriptions
+              </NavLink>
+              <NavLink to="/invoices" className={subNavClass}>
+                Invoices
+              </NavLink>
+            </>
+          )}
+
+          {!isExpanded && (
+            <>
+              <CustomTooltip text="Subscriptions" position="right" sidebar>
+                <NavLink to="/subscriptions" className={iconNavClass}>
+                  {({ isActive }) => <Repeat className={getIconCls(isActive)} />}
+                </NavLink>
+              </CustomTooltip>
+              <CustomTooltip text="Invoices" position="right" sidebar>
+                <NavLink to="/invoices" className={iconNavClass}>
+                  {({ isActive }) => <FileText className={getIconCls(isActive)} />}
+                </NavLink>
+              </CustomTooltip>
+            </>
+          )}
+        </div>
+
+        {/* ── Group 2 ── */}
+        <div className="mt-4">
+          <CustomTooltip text="Plans" position="right" disabled={isExpanded} sidebar>
+            <NavLink to="/plans" className={iconNavClass}>
+              {({ isActive }) => (
+                <>
+                  <CreditCard className={getIconCls(isActive)} />
+                  {isExpanded && <span>Plans</span>}
+                </>
+              )}
+            </NavLink>
+          </CustomTooltip>
+
+          <CustomTooltip text="Connected accounts" position="right" disabled={isExpanded} sidebar>
+            <NavLink to="/connected" className={iconNavClass}>
+              {({ isActive }) => (
+                <>
+                  <Link2 className={getIconCls(isActive)} />
+                  {isExpanded && <span>Connected accounts</span>}
+                </>
+              )}
+            </NavLink>
+          </CustomTooltip>
+
+          <CustomTooltip text="Products" position="right" disabled={isExpanded} sidebar>
+            <NavLink to="/products" className={iconNavClass}>
+              {({ isActive }) => (
+                <>
+                  <Package className={getIconCls(isActive)} />
+                  {isExpanded && <span>Products</span>}
+                </>
+              )}
+            </NavLink>
+          </CustomTooltip>
+
+          <CustomTooltip text="Reports" position="right" disabled={isExpanded} sidebar>
+            <NavLink to="/reports" className={iconNavClass}>
+              {({ isActive }) => (
+                <>
+                  <BarChart2 className={getIconCls(isActive)} />
+                  {isExpanded && <span>Reports</span>}
+                </>
+              )}
+            </NavLink>
+          </CustomTooltip>
+        </div>
+
+        {/* ── Group 3: Dev ── */}
+        <div className="mt-4">
+          <CustomTooltip text="Developers" position="right" disabled={isExpanded} sidebar>
+            <NavLink to="/developers" className={iconNavClass}>
+              {({ isActive }) => (
+                <>
+                  <Code2 className={getIconCls(isActive)} />
+                  {isExpanded && <span>Developers</span>}
+                </>
+              )}
+            </NavLink>
+          </CustomTooltip>
+
+          {/* View test data toggle */}
+          {isExpanded ? (
+            <button
+              onClick={() => setTestData(v => !v)}
+              className="flex items-center gap-2.5 px-2 py-[5px] w-full rounded-[5px] text-[13.5px] text-[#3c4257] dark:text-gray-300 hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              <span
+                className={[
+                  'relative inline-flex flex-shrink-0 rounded-full transition-colors duration-200',
+                  testData ? 'bg-[#5469d4]' : 'bg-[#c1c9d2] dark:bg-[#444]',
+                ].join(' ')}
+                style={{ width: 28, height: 16 }}
+              >
+                <span
+                  className="absolute top-[2px] w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-200"
+                  style={{ width: 12, height: 12, left: 2, transform: testData ? 'translateX(12px)' : 'translateX(0)' }}
+                />
+              </span>
+              <span>View test data</span>
+            </button>
+          ) : (
+            <CustomTooltip text="View test data" position="right" sidebar>
+              <button
+                onClick={() => setTestData(v => !v)}
+                className="flex justify-center items-center w-full py-[7px] rounded-[5px] hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                <span
+                  className={[
+                    'relative inline-flex flex-shrink-0 rounded-full transition-colors duration-200',
+                    testData ? 'bg-[#5469d4]' : 'bg-[#c1c9d2] dark:bg-[#444]',
+                  ].join(' ')}
+                  style={{ width: 24, height: 14 }}
+                >
+                  <span
+                    className="absolute top-[2px] rounded-full bg-white shadow-sm transition-transform duration-200"
+                    style={{ width: 10, height: 10, left: 2, transform: testData ? 'translateX(10px)' : 'translateX(0)' }}
+                  />
+                </span>
               </button>
             </CustomTooltip>
           )}
-        </div>
-      </div>
 
-      {/* Nav Items — hidden scrollbar */}
-      <div
-        className={`flex-1 ${isExpanded ? 'px-3' : 'px-2'} space-y-5 pb-4 mt-2 overflow-y-auto`}
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-      >
-        {/* Hides webkit scrollbar inline via a style tag trick — or add to global CSS */}
-
-        <div className="space-y-0.5">
-          <CustomTooltip text="Dashboard" position="right" disabled={isExpanded} sidebar>
-            <NavLink to="/" className={({ isActive }) => navLinkClass(isActive)}>
-              <LayoutDashboard className="w-4 h-4 flex-shrink-0" />
-              {isExpanded && <span>Dashboard</span>}
-            </NavLink>
-          </CustomTooltip>
-
-          <CustomTooltip text="Customers" position="right" disabled={isExpanded} sidebar>
-            <NavLink to="/customers" className={({ isActive }) => navLinkClass(isActive)}>
-              <Users className="w-4 h-4 flex-shrink-0" />
-              {isExpanded && <span>Customers</span>}
-            </NavLink>
-          </CustomTooltip>
-
-          <CustomTooltip text="Plans" position="right" disabled={isExpanded} sidebar>
-            <NavLink to="/plans" className={({ isActive }) => navLinkClass(isActive)}>
-              <CreditCard className="w-4 h-4 flex-shrink-0" />
-              {isExpanded && <span>Plans</span>}
-            </NavLink>
-          </CustomTooltip>
-
-          <CustomTooltip text="Subscriptions" position="right" disabled={isExpanded} sidebar>
-            <NavLink to="/subscriptions" className={({ isActive }) => navLinkClass(isActive)}>
-              <Repeat className="w-4 h-4 flex-shrink-0" />
-              {isExpanded && <span>Subscriptions</span>}
-            </NavLink>
-          </CustomTooltip>
-
-          <CustomTooltip text="Invoices" position="right" disabled={isExpanded} sidebar>
-            <NavLink to="/invoices" className={({ isActive }) => navLinkClass(isActive)}>
-              <FileText className="w-4 h-4 flex-shrink-0" />
-              {isExpanded && <span>Invoices</span>}
-            </NavLink>
-          </CustomTooltip>
-        </div>
-
-        {/* Bottom Nav */}
-        <div className="space-y-0.5 pt-4 border-t border-white/20 dark:border-white/10">
           <CustomTooltip text="Settings" position="right" disabled={isExpanded} sidebar>
-            <button className={`flex items-center ${isExpanded ? 'gap-3 px-2' : 'justify-center'} py-1.5 text-[13px] text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 w-full rounded hover:bg-white/50 dark:hover:bg-[#111] transition-colors font-medium cursor-pointer whitespace-nowrap`}>
-              <Settings className="w-4 h-4 flex-shrink-0" />
-              {isExpanded && <span>Settings</span>}
-            </button>
-          </CustomTooltip>
-
-          <CustomTooltip text="Logout" position="right" disabled={isExpanded} sidebar>
-            <button onClick={handleLogout} className={`flex items-center ${isExpanded ? 'gap-3 px-2' : 'justify-center'} py-1.5 text-[13px] text-red-500 hover:text-red-600 dark:hover:text-red-400 w-full rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors font-medium cursor-pointer whitespace-nowrap`}>
-              <LogOut className="w-4 h-4 flex-shrink-0" />
-              {isExpanded && <span>Logout</span>}
-            </button>
+            <NavLink to="/settings" className={iconNavClass}>
+              {({ isActive }) => (
+                <>
+                  <Settings className={getIconCls(isActive)} />
+                  {isExpanded && <span>Settings</span>}
+                </>
+              )}
+            </NavLink>
           </CustomTooltip>
         </div>
       </div>
 
-      {/* Brand Logo at Bottom */}
-      <div className="pt-3 pb-0 border-t border-white/20 dark:border-white/10 flex flex-col items-center justify-center gap-3">
-        {isExpanded && (
-          <span className="text-[12px] font-bold tracking-[0.2em] text-gray-400 dark:text-gray-600 uppercase">
-            NexBill
-          </span>
-        )}
-        <div className={`transition-all duration-300 ${isExpanded ? 'w-12 h-12 rounded-sm' : 'w-8 h-8 rounded-sm'} overflow-hidden border border-white/50 dark:border-white/10 shadow-lg bg-white dark:bg-black/40 flex-shrink-0`}>
-          <img src="/logo.png" alt="NexBill" className="w-full h-full object-cover" />
-        </div>
-      </div>
-
-      {/* Footer: Theme Toggle + Collapse */}
-      <div className={`p-3 border-t border-white/30 dark:border-white/10 flex items-center justify-between ${!isExpanded ? 'flex-col gap-3' : ''} bg-white/30 dark:bg-black/20`}>
-
-        {/* Theme Toggle */}
-        {!isExpanded ? (
-          <CustomTooltip text={theme === 'dark' ? 'Light Mode' : 'Dark Mode'} position="right" sidebar>
-            <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-full border border-gray-200 dark:border-[#333] bg-white dark:bg-[#1a1a1a] text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer shadow-md flex-shrink-0"
-            >
-              {theme === 'dark'
-                ? <Sun className="w-4 h-4 flex-shrink-0 text-gray-400 hover:text-white" />
-                : <Moon className="w-4 h-4 flex-shrink-0 text-gray-500 hover:text-gray-900" />}
-            </button>
-          </CustomTooltip>
-        ) : (
-          <div className="flex p-1 rounded-md border border-white/50 dark:border-[#333] shadow-md bg-white/60 dark:bg-[#1a1a1a]">
+      {/* ── Footer ── */}
+      <div className={[
+        'flex-shrink-0 border-t border-[#e3e8ee] dark:border-white/10 p-3',
+        isExpanded ? 'flex items-center justify-between' : 'flex flex-col items-center gap-2',
+      ].join(' ')}>
+        {/* Theme toggle */}
+        {isExpanded ? (
+          <div className="flex p-0.5 rounded-md bg-[#f6f9fc] dark:bg-white/5 border border-[#e3e8ee] dark:border-white/10">
             <button
               onClick={() => setTheme('light')}
-              className={`p-1.5 rounded cursor-pointer transition-colors ${theme === 'light' ? 'bg-white shadow-sm dark:bg-[#333] text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'}`}
+              className={[
+                'p-1.5 rounded cursor-pointer transition-colors',
+                theme === 'light'
+                  ? 'bg-white dark:bg-[#222] shadow-sm text-[#1a1f36] dark:text-white'
+                  : 'text-[#8792a2] hover:text-[#3c4257] dark:hover:text-gray-200',
+              ].join(' ')}
             >
-              <Sun className="w-3.5 h-3.5 flex-shrink-0" />
+              <Sun className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={() => setTheme('dark')}
-              className={`p-1.5 rounded cursor-pointer transition-colors ${theme === 'dark' ? 'bg-white shadow-sm dark:bg-[#333] text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300'}`}
+              className={[
+                'p-1.5 rounded cursor-pointer transition-colors',
+                theme === 'dark'
+                  ? 'bg-white dark:bg-[#222] shadow-sm text-[#1a1f36] dark:text-white'
+                  : 'text-[#8792a2] hover:text-[#3c4257] dark:hover:text-gray-200',
+              ].join(' ')}
             >
-              <Moon className="w-3.5 h-3.5 flex-shrink-0" />
+              <Moon className="w-3.5 h-3.5" />
             </button>
           </div>
+        ) : (
+          <CustomTooltip text={theme === 'dark' ? 'Light mode' : 'Dark mode'} position="right" sidebar>
+            <button
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-1.5 cursor-pointer rounded-md text-[#697386] hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </CustomTooltip>
         )}
 
-        {/* Collapse/Expand Toggle */}
-        <CustomTooltip text={isExpanded ? 'Collapse Sidebar' : 'Expand Sidebar'} position="right" sidebar>
+        {/* Collapse */}
+        <CustomTooltip text={isExpanded ? 'Collapse' : 'Expand'} position="right" sidebar>
           <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className={`p-1.5 text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer rounded-md hover:bg-white/50 dark:hover:bg-[#222] ${!isExpanded && 'bg-white/50 dark:bg-[#222]'}`}
+            onClick={() => setIsExpanded(v => !v)}
+            className="p-1.5 text-[#697386] hover:text-[#3c4257] dark:hover:text-white hover:bg-[#f6f9fc] dark:hover:bg-white/5 rounded-md transition-colors cursor-pointer"
           >
-            {isExpanded ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
+            {isExpanded ? <PanelLeftClose className="w-4 h-4" /> : <PanelLeftOpen className="w-4 h-4" />}
           </button>
         </CustomTooltip>
       </div>

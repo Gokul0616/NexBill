@@ -1,24 +1,14 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
-import { cn } from '../lib/utils';
 
-const LoadingScreen = ({ text = "", className }) => {
+const LoadingScreen = ({ text = "Loading...", fullScreen = false }) => {
     return (
-        <div className={cn(
-            "flex-1 flex items-center justify-center min-h-screen bg-white dark:bg-[#050505]",
-            className
-        )}>
-            <div className="flex flex-col items-center">
-                <div className="animate-in fade-in duration-1000">
-                    <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-blue-400" />
-                </div>
-
-                {text && (
-                    <p className="mt-4 text-sm font-medium text-gray-500 dark:text-gray-400">
-                        {text}
-                    </p>
-                )}
-            </div>
+        <div className={`
+            flex flex-col items-center justify-center 
+            ${fullScreen ? 'fixed inset-0 bg-white dark:bg-[#0d0d0d] z-[9999]' : 'min-h-[400px] flex-1'}
+            animate-in fade-in duration-500
+        `}>
+            <div className="w-8 h-8 border-2 border-[#5469d4]/20 border-t-[#5469d4] rounded-full animate-spin mb-4" />
+            <p className="text-[13px] text-[#697386] font-medium">{text}</p>
         </div>
     );
 };

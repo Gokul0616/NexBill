@@ -1,7 +1,7 @@
 {
   "name": "billing",
   "version": "1.0.0",
-  "description": "",
+  "description": "NexBill Microservices Monorepo",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,7 +11,14 @@
     "install:frontend": "cd frontend && npm install",
     "install:all": "npm run install:root && npm run install:frontend && npm run install:services",
     "setup": "npm run clean && npm run install:all",
-    "dev:all": "concurrently \"npm run dev --prefix services/api-gateway\" \"npm run dev --prefix services/identity-service\" \"npm run dev --prefix services/subscription-service\" \"npm run dev --prefix services/billing-service\" \"npm run dev --prefix services/payment-service\" \"npm run dev --prefix frontend\""
+    "dev:gateway": "npm run dev --prefix services/api-gateway",
+    "dev:identity": "npm run dev --prefix services/identity-service",
+    "dev:subscription": "npm run dev --prefix services/subscription-service",
+    "dev:billing": "npm run dev --prefix services/billing-service",
+    "dev:payment": "npm run dev --prefix services/payment-service",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "concurrently \"npm run dev:gateway\" \"npm run dev:identity\" \"npm run dev:subscription\" \"npm run dev:billing\" \"npm run dev:payment\"",
+    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
   },
   "keywords": [],
   "author": "",
@@ -20,8 +27,8 @@
   "devDependencies": {
     "concurrently": "^9.2.1"
   },
-  "dependencies": {
-    "dotenv": "^17.4.2",
-    "pg": "^8.20.0"
-  }
+  "workspaces": [
+    "packages/*",
+    "services/*"
+  ]
 }

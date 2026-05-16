@@ -5,11 +5,51 @@ import apiClient from '../config/api';
 import ButtonOutlet from '../components/ButtonOutlet';
 import { PlusCircle, Trash2, Calendar, User, Package } from 'lucide-react';
 
+function SubscriptionForm({ onSubmit, customers, plans, onCancel }) {
+  const [formData, setFormData] = useState({ customer_id: '', plan_id: '' });
+
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Customer</label>
+        <select 
+          required 
+          className="w-full border border-gray-300 dark:border-[#333] dark:bg-[#111] dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
+          value={formData.customer_id}
+          onChange={e => setFormData(prev => ({...prev, customer_id: e.target.value}))}
+        >
+          <option value="">Select a customer...</option>
+          {customers.map(c => (
+            <option key={c.id} value={c.id}>{c.name} ({c.email})</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Plan</label>
+        <select 
+          required 
+          className="w-full border border-gray-300 dark:border-[#333] dark:bg-[#111] dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
+          value={formData.plan_id}
+          onChange={e => setFormData(prev => ({...prev, plan_id: e.target.value}))}
+        >
+          <option value="">Select a plan...</option>
+          {plans.map(p => (
+            <option key={p.id} value={p.id}>{p.name} - ₹{p.price}/{p.billing_cycle}</option>
+          ))}
+        </select>
+      </div>
+      <div className="flex justify-end gap-3 mt-8">
+        <ButtonOutlet label="Cancel" onClick={onCancel} variant="secondary" className="px-6" />
+        <ButtonOutlet type="submit" label="Create Subscription" variant="default" className="px-6 !bg-[#246dff] !text-white" />
+      </div>
+    </form>
+  );
+}
+
 export default function Subscriptions() {
   const [subscriptions, setSubscriptions] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [plans, setPlans] = useState([]);
-  const [formData, setFormData] = useState({ customer_id: '', plan_id: '' });
   const [loading, setLoading] = useState(false);
   const { showMessage } = useMessage();
   const { openModal, closeModal } = useModal();
@@ -37,12 +77,10 @@ export default function Subscriptions() {
     }
   };
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
+  const handleCreateSubscription = async (data) => {
     try {
-      await apiClient.post('/subscriptions', formData);
+      await apiClient.post('/subscriptions', data);
       closeModal();
-      setFormData({ customer_id: '', plan_id: '' });
       showMessage('Subscription created successfully', 'success');
       fetchData();
     } catch (err) {
@@ -53,50 +91,12 @@ export default function Subscriptions() {
   const openCreateModal = () => {
     openModal(
       'Create New Subscription',
-      <form onSubmit={handleCreate} className="space-y-4">
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Customer</label>
-          <select 
-            required 
-            className="w-full border border-gray-300 dark:border-[#333] dark:bg-[#111] dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
-            value={formData.customer_id}
-            onChange={e => setFormData(prev => ({...prev, customer_id: e.target.value}))}
-          >
-            <option value="">Select a customer...</option>
-            {customers.map(c => (
-              <option key={c.id} value={c.id}>{c.name} ({c.email})</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Plan</label>
-          <select 
-            required 
-            className="w-full border border-gray-300 dark:border-[#333] dark:bg-[#111] dark:text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none appearance-none"
-            value={formData.plan_id}
-            onChange={e => setFormData(prev => ({...prev, plan_id: e.target.value}))}
-          >
-            <option value="">Select a plan...</option>
-            {plans.map(p => (
-              <option key={p.id} value={p.id}>{p.name} - ₹{p.price}/{p.billing_cycle}</option>
-            ))}
-          </select>
-        </div>
-        <div className="flex justify-end gap-3 mt-8">
-          <ButtonOutlet 
-            label="Cancel" 
-            onClick={closeModal} 
-            variant="secondary" 
-            className="px-6"
-          />
-          <ButtonOutlet 
-            type="submit" 
-            label="Create Subscription" 
-            variant="default" 
-            className="px-6 !bg-[#246dff] !text-white"
-          />
-        </div>
-      </form>,
+      <SubscriptionForm 
+        onSubmit={handleCreateSubscription} 
+        customers={customers} 
+        plans={plans} 
+        onCancel={closeModal} 
+      />,
       'md'
     );
   };
@@ -134,8 +134,8 @@ export default function Subscriptions() {
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Customer</th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Plan</th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Next Billing</th>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Next Billing</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -172,13 +172,13 @@ export default function Subscriptions() {
                     {(sub.status || 'unknown').toUpperCase()}
                   </span>
                 </td>
-                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono">
-                  <div className="flex items-center gap-2">
+                <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 font-mono text-right">
+                  <div className="flex items-center justify-end gap-2">
                     <Calendar className="w-3.5 h-3.5" />
                     {new Date(sub.next_billing_date).toLocaleDateString()}
                   </div>
                 </td>
-                <td className="px-6 py-4">
+                <td className="px-6 py-4 text-right">
                   {sub.status === 'active' && (
                     <ButtonOutlet 
                       icon={Trash2} 
