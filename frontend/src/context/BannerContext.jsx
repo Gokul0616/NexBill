@@ -5,8 +5,8 @@ const BannerContext = createContext();
 export function BannerProvider({ children }) {
   const [banner, setBanner] = useState(null);
 
-  const showBanner = useCallback((id, message, type = 'info', action = null) => {
-    setBanner({ id, message, type, action });
+  const showBanner = useCallback((id, message, type = 'info', action = null, onDismiss = null) => {
+    setBanner({ id, message, type, action, onDismiss });
   }, []);
 
   const hideBanner = useCallback(() => {

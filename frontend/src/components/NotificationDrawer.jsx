@@ -1,12 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import {
     Bell, CheckCircle, FileText, AlertTriangle, CreditCard,
-    RefreshCw, ArrowUpRight, Filter, Check, X, ChevronDown,
-    ArrowRight, Settings, Trash2, Calendar
+    RefreshCw, ArrowRight, Settings, Check, X
 } from 'lucide-react';
-
 
 const ALL_NOTIFICATIONS = [
     {
@@ -22,7 +21,7 @@ const ALL_NOTIFICATIONS = [
     {
         id: 2, type: 'info', category: 'Payments',
         title: 'Invoice #1048 paid',
-        detail: 'Acme Corp settled invoice #1048 in full',
+        detail: 'NexBill Inc settled invoice #1048 in full',
         time: '1 hr ago', date: 'Today',
         amount: '$1,200.00', amountColor: '#635bff',
         meta: 'in_1P3xRz2eZ',
@@ -66,12 +65,19 @@ const TABS = ['All', 'Payments', 'Disputes', 'Payouts'];
 export default function NotificationDrawer({ isOpen, onClose }) {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('All');
-
     const [notifications, setNotifications] = useState(ALL_NOTIFICATIONS);
+
+    const { 
+        verificationStatus, 
+        currentlyDue, 
+        verificationComments, 
+        refreshVerificationStatus 
+    } = useContext(AuthContext);
 
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = 'hidden';
+            refreshVerificationStatus();
         } else {
             document.body.style.overflow = 'unset';
         }
@@ -80,17 +86,72 @@ export default function NotificationDrawer({ isOpen, onClose }) {
 
     if (!isOpen) return null;
 
-    const filtered = activeTab === 'All'
-        ? notifications
-        : notifications.filter(n => n.category === activeTab);
+    // Generate dynamic compliance notifications based on verification state
+    const complianceNotifications = [];
+    if (verificationStatus === 'under_review') {
+        complianceNotifications.push({
+            id: 'compliance-review',
+            type: 'warn',
+            category: 'Payouts',
+            title: 'Account Verification Under Review',
+            detail: 'Our compliance team is currently reviewing your merchant documents. Payouts and settlements are temporarily locked until review completes.',
+            time: 'Just now',
+            date: 'Today',
+            amount: 'Reviewing',
+            amountColor: '#b45309',
+            meta: 'kyc_under_review',
+            unread: true,
+            icon: AlertTriangle,
+            isCompliance: true,
+            actionPath: '/activate'
+        });
+    } else if (verificationStatus === 'action_required' || verificationStatus === 'restricted') {
+        const requiredLabel = currentlyDue.length > 0 
+            ? `Required: ${currentlyDue.map(f => f.replace(/_/g, ' ')).join(', ')}` 
+            : 'Document re-upload needed';
+        complianceNotifications.push({
+            id: 'compliance-action',
+            type: 'error',
+            category: 'Payouts',
+            title: 'Verification Action Required',
+            detail: `Compliance verification failed. ${requiredLabel}. Reason: ${verificationComments || 'Provided details are incomplete or invalid.'}`,
+            time: 'Just now',
+            date: 'Today',
+            amount: 'Action Required',
+            amountColor: '#df1b41',
+            meta: 'kyc_rejected',
+            unread: true,
+            icon: AlertTriangle,
+            isCompliance: true,
+            actionPath: '/activate'
+        });
+    }
 
-    const markRead = (id) => setNotifications(prev =>
-        prev.map(n => n.id === id ? { ...n, unread: false } : n)
-    );
+    const mergedNotifications = [...complianceNotifications, ...notifications];
+
+    const filtered = activeTab === 'All'
+        ? mergedNotifications
+        : mergedNotifications.filter(n => n.category === activeTab);
+
+    const markRead = (id) => {
+        if (typeof id === 'string') return; // ignore read trigger for dynamic compliance warnings
+        setNotifications(prev =>
+            prev.map(n => n.id === id ? { ...n, unread: false } : n)
+        );
+    };
 
     const markAllRead = () => setNotifications(prev =>
         prev.map(n => ({ ...n, unread: false }))
     );
+
+    const handleNotificationClick = (n) => {
+        if (n.isCompliance && n.actionPath) {
+            navigate(n.actionPath);
+            onClose();
+        } else {
+            markRead(n.id);
+        }
+    };
 
     return createPortal(
         <div className={`fixed inset-0 z-[1000] flex justify-end overflow-hidden ${isOpen ? 'visible' : 'invisible'}`}>
@@ -164,20 +225,22 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                                 return (
                                     <div
                                         key={n.id}
+                                        onClick={() => handleNotificationClick(n)}
                                         className={`px-6 py-4 flex gap-3 transition-colors cursor-pointer group hover:bg-gray-50/50 dark:hover:bg-white/[0.02]
                                             ${n.unread ? 'relative' : ''}
+                                            ${n.isCompliance ? (n.type === 'error' ? 'bg-rose-50/30 dark:bg-rose-950/10 border-l-2 border-l-rose-500' : 'bg-amber-50/30 dark:bg-amber-950/10 border-l-2 border-l-amber-500') : ''}
                                         `}
                                     >
                                         {/* Unread indicator */}
-                                        {n.unread && (
+                                        {n.unread && !n.isCompliance && (
                                             <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#635bff] rounded-full" />
                                         )}
 
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2 mb-0.5">
                                                 <div className="flex items-center gap-2 min-w-0">
-                                                    <Icon size={14} className="text-gray-400 flex-shrink-0" />
-                                                    <h4 className="text-[13px] font-semibold text-gray-900 dark:text-white truncate">
+                                                    <Icon size={14} className={n.isCompliance ? (n.type === 'error' ? 'text-rose-500' : 'text-amber-500') : 'text-gray-400'} />
+                                                    <h4 className={`text-[13px] font-semibold truncate ${n.isCompliance ? (n.type === 'error' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400') : 'text-gray-900 dark:text-white'}`}>
                                                         {n.title}
                                                     </h4>
                                                 </div>
@@ -187,12 +250,17 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                                                 {n.detail}
                                             </p>
                                             <div className="flex items-center gap-2 mt-2">
-                                                <span className="text-[11px] font-bold text-gray-900 dark:text-white tabular-nums">
+                                                <span className={`text-[11px] font-bold tabular-nums`} style={{ color: n.amountColor }}>
                                                     {n.amount}
                                                 </span>
                                                 <span className="text-[10px] text-gray-400 font-mono tracking-tight bg-gray-50 dark:bg-white/5 px-1 rounded">
                                                     {n.meta}
                                                 </span>
+                                                {n.isCompliance && (
+                                                    <span className="text-[10px] text-[#635bff] font-semibold underline ml-auto">
+                                                        Resolve →
+                                                    </span>
+                                                )}
                                             </div>
                                         </div>
 
@@ -227,7 +295,10 @@ export default function NotificationDrawer({ isOpen, onClose }) {
                             Settings
                         </button>
 
-                        <button className="text-[12px] font-medium text-[#635bff] hover:text-[#5469d4] flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <button 
+                            onClick={() => { navigate('/notifications'); onClose(); }}
+                            className="text-[12px] font-medium text-[#635bff] hover:text-[#5469d4] flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
                             Full history
                             <ArrowRight size={13} />
                         </button>

@@ -74,7 +74,10 @@ function getInitials(user) {
 }
 
 export default function Header() {
-    const { user, logout } = useContext(AuthContext);
+    const { 
+        user, logout, 
+        verificationStatus, currentlyDue, verificationComments, refreshVerificationStatus 
+    } = useContext(AuthContext);
     const { showMessage } = useMessage();
     const [showNotifs, setShowNotifs] = useState(false);
     const [showUser, setShowUser] = useState(false);
@@ -84,12 +87,55 @@ export default function Header() {
     const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
     const navigate = useNavigate();
 
+    // Setup compliance notifications
+    const complianceNotifications = [];
+    if (verificationStatus === 'under_review') {
+        complianceNotifications.push({
+            id: 'compliance-review',
+            type: 'warn',
+            title: 'Account Verification',
+            detail: 'under review',
+            time: 'Just now',
+            amount: 'Reviewing',
+            amountColor: '#b45309',
+            unread: true,
+            icon: <AlertTriangle size={15} />,
+            isCompliance: true,
+            actionPath: '/activate'
+        });
+    } else if (verificationStatus === 'action_required' || verificationStatus === 'restricted') {
+        complianceNotifications.push({
+            id: 'compliance-action',
+            type: 'warn',
+            title: 'Action required',
+            detail: 'verification rejected',
+            time: 'Just now',
+            amount: 'Resolve',
+            amountColor: '#df1b41',
+            unread: true,
+            icon: <AlertTriangle size={15} />,
+            isCompliance: true,
+            actionPath: '/activate'
+        });
+    }
 
-    const unreadCount = notifications.filter(n => n.unread).length;
+    const mergedNotifications = [...complianceNotifications, ...notifications];
+    const filteredNotifications = activeTab === 'All' 
+        ? mergedNotifications 
+        : mergedNotifications.filter(n => n.category === activeTab);
+
+    const unreadCount = mergedNotifications.filter(n => n.unread).length;
+
     const handleNotificationsClick = () => {
         setShowNotifs(false);
         setIsNotifDrawerOpen(true);
     }
+
+    useEffect(() => {
+        if (showNotifs) {
+            refreshVerificationStatus();
+        }
+    }, [showNotifs]);
 
     useEffect(() => {
         const handler = (e) => {
@@ -172,15 +218,24 @@ export default function Header() {
 
                             {/* Items */}
                             <div>
-                                {notifications.map(n => {
+                                {filteredNotifications.map(n => {
                                     const style = iconStyles[n.type];
                                     return (
                                         <div
                                             key={n.id}
+                                            onClick={() => {
+                                                if (n.isCompliance && n.actionPath) {
+                                                    navigate(n.actionPath);
+                                                    setShowNotifs(false);
+                                                }
+                                            }}
                                             className={`flex items-start gap-2.5 px-4 py-3 cursor-pointer transition-colors border-b border-[#f6f9fc] dark:border-white/5 last:border-none
-                                                ${n.unread
-                                                    ? 'bg-[#f7f6ff] dark:bg-[#635bff]/5 hover:bg-[#efedff] dark:hover:bg-[#635bff]/10'
-                                                    : 'hover:bg-[#f6f9fc] dark:hover:bg-white/5'
+                                                ${n.isCompliance 
+                                                    ? (n.amountColor === '#df1b41' ? 'bg-rose-50/50 dark:bg-rose-950/10 hover:bg-rose-100/50 dark:hover:bg-rose-950/20' : 'bg-amber-50/50 dark:bg-amber-950/10 hover:bg-amber-100/50 dark:hover:bg-amber-950/20')
+                                                    : (n.unread
+                                                        ? 'bg-[#f7f6ff] dark:bg-[#635bff]/5 hover:bg-[#efedff] dark:hover:bg-[#635bff]/10'
+                                                        : 'hover:bg-[#f6f9fc] dark:hover:bg-white/5'
+                                                    )
                                                 }`}
                                         >
                                             {/* Unread dot */}
@@ -192,7 +247,13 @@ export default function Header() {
                                             {/* Icon circle */}
                                             <div
                                                 className="w-[30px] h-[30px] rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
-                                                style={{ background: style.bg, color: style.color }}
+                                                style={n.isCompliance ? {
+                                                    background: n.amountColor === '#df1b41' ? '#ffebee' : '#fff8e1',
+                                                    color: n.amountColor
+                                                } : {
+                                                    background: style.bg,
+                                                    color: style.color
+                                                }}
                                             >
                                                 {n.icon}
                                             </div>
@@ -293,10 +354,11 @@ export default function Header() {
                                         submenu: [
                                             { id: 'profile', label: 'Profile', icon: <User size={12} /> },
                                             { id: 'security', label: 'Security', icon: <Shield size={12} /> },
-                                            { id: 'preferences', label: 'Preferences', icon: <Globe size={12} /> },
+                                            { id: 'appearance', label: 'Appearance', icon: <Monitor size={12} /> },
+                                            { id: 'notifications', label: 'Notifications', icon: <Bell size={12} /> },
                                         ]
                                     },
-                                    { icon: <Bell size={14} />, label: 'Notification preferences', path: '/account?tab=preferences' },
+                                    { icon: <Bell size={14} />, label: 'Notification preferences', path: '/account?tab=notifications' },
                                 ].map(item => (
                                     <div key={item.label} className="relative group/item">
                                         <button

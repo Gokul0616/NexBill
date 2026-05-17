@@ -5,7 +5,7 @@ require('dotenv').config({ path: '../../.env' });
 
 const requireAuth = require('./middlewares/auth.middleware');
 const errorHandler = require('./middlewares/error.middleware');
-const { identityUrl, subscriptionUrl, billingUrl, paymentUrl } = require('./config/services');
+const { identityUrl, subscriptionUrl, billingUrl, paymentUrl, adminUrl } = require('./config/services');
 
 const app = express();
 
@@ -21,7 +21,12 @@ const proxyOptions = {
   changeOrigin: true,
   on: {
     proxyReq: (proxyReq, req, res) => {
-      // req.originalUrl contains the full path including /api
+      // Propagate user identity to downstream services
+      if (req.user) {
+        proxyReq.setHeader('X-User-Id', req.user.userId);
+        proxyReq.setHeader('X-User-Payload', JSON.stringify(req.user));
+      }
+      
       console.log(`[Proxy] ${req.method} ${req.originalUrl} -> ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
     },
     error: (err, req, res) => {
@@ -31,6 +36,12 @@ const proxyOptions = {
 };
 
 // Proxy definitions - Mounting on root and using pathFilter to preserve full /api/... path
+app.use(createProxyMiddleware({ 
+  ...proxyOptions, 
+  pathFilter: '/uploads', 
+  target: identityUrl 
+}));
+
 app.use(createProxyMiddleware({ 
   ...proxyOptions, 
   pathFilter: '/api/auth', 
@@ -65,6 +76,12 @@ app.use(createProxyMiddleware({
   ...proxyOptions, 
   pathFilter: '/api/payments', 
   target: paymentUrl 
+}));
+
+app.use(createProxyMiddleware({ 
+  ...proxyOptions, 
+  pathFilter: '/api/admin', 
+  target: adminUrl 
 }));
 
 app.use(errorHandler);

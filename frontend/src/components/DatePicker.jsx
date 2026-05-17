@@ -122,20 +122,12 @@ const DatePicker = ({
     }
   };
 
-  /* ── Lock nearest scrollable parent while open ───────────────────── */
+  /* ── Lock scroll when open ────────────────────────────────────────── */
   useEffect(() => {
-    if (!open || !inputRef.current) return;
-    // Walk up to find the nearest scrollable ancestor (the modal content area)
-    let scrollParent = inputRef.current.parentElement;
-    while (scrollParent && scrollParent !== document.body) {
-      const { overflowY } = window.getComputedStyle(scrollParent);
-      if (overflowY === 'auto' || overflowY === 'scroll') break;
-      scrollParent = scrollParent.parentElement;
-    }
-    if (scrollParent && scrollParent !== document.body) {
-      const prev = scrollParent.style.overflowY;
-      scrollParent.style.overflowY = 'hidden';
-      return () => { scrollParent.style.overflowY = prev; };
+    if (open) {
+      const originalStyle = window.getComputedStyle(document.body).overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = originalStyle; };
     }
   }, [open]);
 
@@ -149,10 +141,10 @@ const DatePicker = ({
       ) setOpen(false);
     };
     const reposition = () => { if (open) calcCoords(); };
-    document.addEventListener('mousedown', handle);
+    document.addEventListener('mousedown', handle, true);
     window.addEventListener('resize', reposition);
     return () => {
-      document.removeEventListener('mousedown', handle);
+      document.removeEventListener('mousedown', handle, true);
       window.removeEventListener('resize', reposition);
     };
   }, [open, calcCoords]);
@@ -173,14 +165,26 @@ const DatePicker = ({
   const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
 
   /* ── Select date ───────────────────────────────────────────────────── */
-  const selectDate = d => {
-    const mm = String(viewMonth + 1).padStart(2, '0');
+  const selectDate = (y, m, d) => {
+    const mm = String(m + 1).padStart(2, '0');
     const dd = String(d).padStart(2, '0');
-    const newVal = `${viewYear}-${mm}-${dd}`;
+    const newVal = `${y}-${mm}-${dd}`;
+    
     if (allowDeselect && value === newVal) { onChange(''); }
     else { onChange(newVal); }
     setOpen(false);
   };
+
+  const handleDayClick = (c) => {
+    if (isDateDisabled(c.year, c.month, c.day)) return;
+    
+    if (c.outside) {
+      setViewYear(c.year);
+      setViewMonth(c.month);
+    }
+    selectDate(c.year, c.month, c.day);
+  };
+
   const selectMonth = m => { setViewMonth(m); setLevel('month'); };
   const selectYear = y => { setViewYear(y); setLevel('year'); };
 
@@ -257,17 +261,17 @@ const DatePicker = ({
                 key={i}
                 type="button"
                 disabled={finalDisabled}
-                onClick={() => !finalDisabled && !c.outside && selectDate(c.day)}
+                onClick={() => !finalDisabled && handleDayClick(c)}
                 className={`${s.cell} mx-auto flex items-center justify-center rounded-md font-medium transition-all duration-150
                   ${c.outside
-                    ? 'text-muted-foreground/25 cursor-default'
+                    ? 'text-[#6d6e78]/30 dark:text-[#9ea3b0]/30 hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer'
                     : isSelected
-                      ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30 scale-105'
+                      ? 'bg-[#5469d4] text-white shadow-sm shadow-[#5469d4]/30 scale-105'
                       : isToday
-                        ? 'border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
+                        ? 'border border-[#5469d4] text-[#5469d4] hover:bg-[#5469d4]/5'
                         : finalDisabled
-                          ? 'text-muted-foreground/30 cursor-not-allowed'
-                          : 'text-foreground hover:bg-muted'
+                          ? 'text-[#6d6e78]/20 cursor-not-allowed opacity-50'
+                          : 'text-[#30313d] dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer'
                   }`}
               >
                 {c.day}
@@ -314,15 +318,14 @@ const DatePicker = ({
   const renderDecadeView = () => {
     const ds = decadeStart(viewYear);
     const years = [];
-    for (let y = ds - 1; y <= ds + 10; y++) years.push(y);
+    for (let y = ds; y <= ds + 9; y++) years.push(y);
 
     return (
       <div className="grid grid-cols-3 gap-1.5 px-1">
         {years.map(y => {
-          const outside = y < ds || y > ds + 9;
-          const dis = isYearDisabled(y);
           const isCurrent = parsed && parsed.getFullYear() === y;
           const isThisYear = today.getFullYear() === y;
+          const dis = isYearDisabled(y);
           const extraProps = getYearControlProps ? getYearControlProps(new Date(y, 0, 1)) : {};
           const finalDisabled = dis || extraProps.disabled;
 
@@ -330,18 +333,16 @@ const DatePicker = ({
             <button
               key={y}
               type="button"
-              disabled={finalDisabled || outside}
-              onClick={() => !finalDisabled && !outside && selectYear(y)}
+              disabled={finalDisabled}
+              onClick={() => !finalDisabled && selectYear(y)}
               className={`${s.monthCell} rounded-lg font-medium transition-all duration-150
-                ${outside
-                  ? 'text-muted-foreground/25 cursor-default'
-                  : isCurrent
-                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
-                    : isThisYear
-                      ? 'border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30'
-                      : finalDisabled
-                        ? 'text-muted-foreground/30 cursor-not-allowed'
-                        : 'text-foreground hover:bg-muted'
+                ${isCurrent
+                  ? 'bg-[#5469d4] text-white shadow-sm shadow-[#5469d4]/30'
+                  : isThisYear
+                    ? 'border border-[#5469d4] text-[#5469d4] hover:bg-[#5469d4]/5'
+                    : finalDisabled
+                      ? 'text-[#6d6e78]/20 cursor-not-allowed opacity-50'
+                      : 'text-[#30313d] dark:text-white hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer'
                 }`}
             >
               {y}
@@ -363,25 +364,25 @@ const DatePicker = ({
         width: 260,
         zIndex: 99999,
       }}
-      className={`bg-background border border-border rounded-xl shadow-2xl ${s.gap} animate-in fade-in zoom-in-95 duration-150 origin-top`}
+      className={`bg-white dark:bg-[#111] border border-[#d1d5db] dark:border-white/[0.08] rounded-[8px] shadow-[0_10px_30px_rgba(0,0,0,.1)] ${s.gap} animate-in fade-in zoom-in-95 duration-150 origin-top`}
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
-        <button type="button" onClick={headerPrev} className="p-1 rounded-md hover:bg-muted transition-colors">
-          <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+        <button type="button" onClick={headerPrev} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
+          <ChevronLeft className="w-4 h-4 text-[#6d6e78]" />
         </button>
 
         <button
           type="button"
           onClick={canZoomOut(level) ? zoomOut : undefined}
-          className={`${s.header} font-semibold text-foreground px-2 py-0.5 rounded-md transition-colors
-            ${canZoomOut(level) ? 'hover:bg-muted cursor-pointer' : 'cursor-default'}`}
+          className={`${s.header} font-bold text-[#30313d] dark:text-white px-2 py-0.5 rounded-md transition-colors
+            ${canZoomOut(level) ? 'hover:bg-gray-100 dark:hover:bg-white/5 cursor-pointer' : 'cursor-default'}`}
         >
           {headerLabel()}
         </button>
 
-        <button type="button" onClick={headerNext} className="p-1 rounded-md hover:bg-muted transition-colors">
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        <button type="button" onClick={headerNext} className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-white/5 transition-colors cursor-pointer">
+          <ChevronRight className="w-4 h-4 text-[#6d6e78]" />
         </button>
       </div>
 
@@ -392,7 +393,7 @@ const DatePicker = ({
 
       {/* Footer */}
       {level === 'month' && (
-        <div className="mt-2 pt-2 border-t border-border flex justify-end">
+        <div className="mt-2 pt-2 border-t border-[#f0f1f3] dark:border-white/[0.06] flex justify-end">
           <button
             type="button"
             onClick={() => {
@@ -401,7 +402,7 @@ const DatePicker = ({
               onChange(`${today.getFullYear()}-${mm}-${dd}`);
               setOpen(false);
             }}
-            className={`px-2.5 py-1 ${s.header} font-medium border border-border rounded-md text-foreground hover:bg-muted transition-colors`}
+            className={`px-3 py-1 text-[11px] font-bold border border-[#d1d5db] dark:border-white/10 rounded-[4px] text-[#30313d] dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer`}
           >
             Today
           </button>
@@ -427,7 +428,7 @@ const DatePicker = ({
       {/* Trigger input */}
       <div className="relative">
         <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+          <Calendar className="w-3.5 h-3.5 text-[#6d6e78] dark:text-[#9ea3b0]" />
         </div>
         <input
           ref={inputRef}
@@ -436,15 +437,15 @@ const DatePicker = ({
           placeholder={placeholder}
           onClick={toggle}
           disabled={disabled}
-          className={`w-full border rounded-lg pl-8 pr-8 ${s.input} cursor-pointer bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 transition-colors
+          className={`w-full bg-white dark:bg-[#0d0d0e] border rounded-[5px] pl-9 pr-8 py-[8px] text-[13.5px] text-[#30313d] dark:text-white outline-none cursor-pointer transition focus:border-[#5469d4] focus:shadow-[0_0_0_3px_rgba(84,105,212,.15)] shadow-[0_1px_1px_rgba(0,0,0,.04)]
             ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
-            ${showError ? 'border-destructive focus:ring-destructive/40' : 'border-border focus:ring-ring'}`}
+            ${showError ? 'border-[#df1b41] focus:ring-[#df1b41]/10' : 'border-[#d1d5db] dark:border-white/[0.08] focus:border-[#5469d4]'}`}
         />
         {clearable && value && !disabled && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onChange(''); setOpen(false); }}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs transition-colors"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#9ea3b0] hover:text-[#30313d] dark:hover:text-white text-[11px] transition-colors p-1"
           >✕</button>
         )}
       </div>

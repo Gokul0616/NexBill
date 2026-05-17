@@ -18,6 +18,8 @@ export const MessageProvider = ({ children }) => {
     // Keep track of active timeouts so we can cancel them if a message gets updated
     const timeoutsRef = useRef({});
 
+    const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
     const dismissMessage = useCallback((id) => {
         setMessages((prev) => prev.filter((msg) => msg.id !== id));
         if (timeoutsRef.current[id]) {
@@ -108,7 +110,7 @@ export const MessageProvider = ({ children }) => {
                 {messages.map((msg) => (
                     <div
                         key={msg.id}
-                        className={`pointer-events-auto flex flex-col justify-between min-w-[320px] max-w-lg rounded-lg shadow-lg border animate-in fade-in slide-in-from-top-5 duration-300 overflow-hidden ${theme === 'dark'
+                        className={`pointer-events-auto flex flex-col justify-between min-w-[320px] max-w-lg rounded-lg shadow-lg border animate-in fade-in slide-in-from-top-5 duration-300 overflow-hidden ${isDarkMode
                             ? 'bg-black border-gray-800 text-white'
                             : 'bg-white border-gray-200 text-gray-900'
                             } `}
@@ -119,7 +121,7 @@ export const MessageProvider = ({ children }) => {
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
                                     <span className="text-sm font-medium">{msg.text}</span>
                                     {msg.progress !== undefined && msg.progress !== null && (
-                                        <div className={`w-24 sm:w-32 flex-shrink-0 h-1 rounded-full overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-gray-200'} `}>
+                                        <div className={`w-24 sm:w-32 flex-shrink-0 h-1 rounded-full overflow-hidden ${isDarkMode ? 'bg-gray-800' : 'bg-gray-200'} `}>
                                             <div
                                                 className="h-full bg-green-500 transition-all duration-300 ease-out"
                                                 style={{ width: `${Math.max(0, Math.min(100, msg.progress))}% ` }}
@@ -132,14 +134,14 @@ export const MessageProvider = ({ children }) => {
                                 {msg.action && (
                                     <button
                                         onClick={(e) => { e.stopPropagation(); msg.action.onClick(msg.id); }}
-                                        className={`text-xs font-semibold px-2 py-1 rounded transition-colors ${theme === 'dark' ? 'bg-gray-800 hover:bg-gray-700 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'} `}
+                                        className={`text-xs font-semibold px-2 py-1 rounded transition-colors ${isDarkMode ? 'bg-gray-800 hover:bg-gray-700 text-blue-400' : 'bg-blue-50 hover:bg-blue-100 text-blue-600'} `}
                                     >
                                         {msg.action.label}
                                     </button>
                                 )}
                                 <button
                                     onClick={() => dismissMessage(msg.id)}
-                                    className={`p-1 rounded-md cursor-pointer transition-colors ${theme === 'dark' ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-400'
+                                    className={`p-1 rounded-md cursor-pointer transition-colors ${isDarkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-400'
                                         } `}
                                 >
                                     <X className="w-4 h-4" />

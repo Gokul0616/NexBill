@@ -2,8 +2,7 @@ const app = require('./app');
 const db = require('@nexbill/db');
 const fs = require('fs');
 const path = require('path');
-
-const PORT = process.env.PORT || 7124;
+const config = require('./config');
 
 async function initDB() {
     await db.init();
@@ -25,8 +24,8 @@ async function initDB() {
 
 async function startServer() {
     await initDB();
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Identity Service running on port ${PORT} (0.0.0.0)`);
+    app.listen(config.PORT, '0.0.0.0', () => {
+        console.log(`Identity Service running on port ${config.PORT} (0.0.0.0)`);
     });
 }
 

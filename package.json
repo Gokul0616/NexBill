@@ -5,20 +5,23 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "rm -rf node_modules package-lock.json services/*/node_modules services/*/package-lock.json frontend/node_modules frontend/package-lock.json",
+    "clean": "rm -rf node_modules package-lock.json services/*/node_modules services/*/package-lock.json frontend/node_modules frontend/package-lock.json nexbill-console/node_modules nexbill-console/package-lock.json",
     "install:root": "npm install",
     "install:services": "for d in services/*/; do (cd \"$d\" && npm install); done",
     "install:frontend": "cd frontend && npm install",
-    "install:all": "npm run install:root && npm run install:frontend && npm run install:services",
+    "install:console": "cd nexbill-console && npm install",
+    "install:all": "npm run install:root && npm run install:frontend && npm run install:console && npm run install:services",
     "setup": "npm run clean && npm run install:all",
     "dev:gateway": "npm run dev --prefix services/api-gateway",
     "dev:identity": "npm run dev --prefix services/identity-service",
     "dev:subscription": "npm run dev --prefix services/subscription-service",
     "dev:billing": "npm run dev --prefix services/billing-service",
     "dev:payment": "npm run dev --prefix services/payment-service",
+    "dev:admin": "npm run dev --prefix services/admin-service",
     "dev:frontend": "npm run dev --prefix frontend",
-    "dev:backend": "concurrently \"npm run dev:gateway\" \"npm run dev:identity\" \"npm run dev:subscription\" \"npm run dev:billing\" \"npm run dev:payment\"",
-    "dev:all": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\""
+    "dev:console": "npm run dev --prefix nexbill-console",
+    "dev:backend": "concurrently \"npm run dev:gateway\" \"npm run dev:identity\" \"npm run dev:subscription\" \"npm run dev:billing\" \"npm run dev:payment\" \"npm run dev:admin\"",
+    "dev:all": "concurrently --kill-others-on-fail \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:console\""
   },
   "keywords": [],
   "author": "",
@@ -29,6 +32,7 @@
   },
   "workspaces": [
     "packages/*",
-    "services/*"
+    "services/*",
+    "nexbill-console"
   ]
 }

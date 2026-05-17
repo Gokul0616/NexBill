@@ -87,6 +87,49 @@ class Database {
                     price: planMap[s.plan_id]?.price || 0
                 }));
             }
+            if (tableName === 'users' && text.includes('merchant_activations')) {
+                let filter = {};
+                const whereMatch = text.match(/WHERE\s+(.+?)(?:\s+ORDER|$)/i);
+                if (whereMatch) {
+                    const whereParts = whereMatch[1].split(' AND ');
+                    whereParts.forEach(part => {
+                        const eqMatch = part.match(/([\w.]+)\s*=\s*\$(\d+)/);
+                        if (eqMatch) {
+                            const field = eqMatch[1].split('.').pop();
+                            let val = params[parseInt(eqMatch[2]) - 1];
+                            if ((field === 'id' || field.endsWith('_id')) && !isNaN(val) && val !== null) {
+                                val = Number(val);
+                            }
+                            filter[field] = val;
+                        }
+                    });
+                }
+
+                const users = await collection.find(filter).toArray();
+                const activations = await this.db.collection('merchant_activations').find({}).toArray();
+                const actMap = Object.fromEntries(activations.map(a => [a.user_id, a]));
+                
+                return users.map(u => {
+                    const act = actMap[u.id];
+                    let actData = {};
+                    if (act) {
+                        const { id: actId, user_id: actUserId, ...rest } = act;
+                        actData = rest;
+                    } else {
+                        actData = {
+                            verification_status: 'pending',
+                            charges_enabled: false,
+                            payouts_enabled: false,
+                            currently_due: [],
+                            verification_comments: ''
+                        };
+                    }
+                    return {
+                        ...u,
+                        ...actData
+                    };
+                });
+            }
         }
 
         // Handle SELECT

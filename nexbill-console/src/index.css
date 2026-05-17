@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --background: #f8f9fc;
+    --text: #09090b;
+    --sidebar-bg: #0f1117;
+    --sidebar-text: #94a3b8;
+    --sidebar-active: #818cf8;
+    --accent: #6366f1;
+    --accent-hover: #818cf8;
+    --surface: #ffffff;
+    --surface-hover: #f4f4f8;
+    --border: #e4e4e7;
+    --muted: #71717a;
+    --drawer-overlay: rgba(0, 0, 0, 0.3);
+  }
+
+  .dark {
+    --background: #09090b;
+    --text: #e4e4e7;
+    --sidebar-bg: #0c0d12;
+    --surface: #111113;
+    --surface-hover: #18181b;
+    --border: #27272a;
+    --muted: #a1a1aa;
+    --drawer-overlay: rgba(0, 0, 0, 0.6);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #3f3f46 transparent;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .drawer-enter {
+    animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .drawer-exit {
+    animation: slideOut 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}

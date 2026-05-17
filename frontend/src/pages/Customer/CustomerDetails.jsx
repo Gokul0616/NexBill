@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../../config/api';
 import { useMessage } from '../../context/MessageContext';
 import LoadingScreen from '../../components/LoadingScreen';
+import { getCustomerFields } from '../../lib/customerFields';
 import {
     ArrowLeft, ChevronDown, Pencil, X, MoreHorizontal,
     ChevronRight
@@ -36,8 +37,11 @@ export default function CustomerDetail() {
     const [tab, setTab] = useState('overview');
     const [detailsOpen, setDetailsOpen] = useState(true);
     const [loading, setLoading] = useState(true);
+    const [customFields, setCustomFields] = useState([]);
 
     useEffect(() => {
+        setCustomFields(getCustomerFields().filter(f => f.isCustom && f.enabled));
+        
         const fetchCustomer = async () => {
             try {
                 const res = await apiClient.get(`/customers/${id}`);
@@ -141,6 +145,14 @@ export default function CustomerDetail() {
                                         <p className="text-[13px] text-[#3c4257] dark:text-gray-200 font-mono">{customer.gst_number}</p>
                                     </div>
                                 )}
+
+                                {/* Custom Fields */}
+                                {customFields.map(f => customer[f.key] && (
+                                    <div key={f.key}>
+                                        <p className="text-[11px] text-[#8792a2] dark:text-gray-500 font-medium mb-0.5">{f.label}</p>
+                                        <p className="text-[13px] text-[#3c4257] dark:text-gray-200">{customer[f.key]}</p>
+                                    </div>
+                                ))}
 
                                 <button className="text-[13px] text-[#5469d4] hover:text-[#4a5fc1] font-medium transition-colors cursor-pointer">
                                     Show more

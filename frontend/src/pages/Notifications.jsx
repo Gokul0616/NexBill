@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import {
     Bell, CheckCircle, FileText, AlertTriangle, CreditCard,
-    RefreshCw, ArrowUpRight, Filter, Check, X, ChevronDown,
+    RefreshCw, Filter, Check, X, ChevronDown,
     Search, MoreHorizontal, Calendar, Download
 } from 'lucide-react';
 
@@ -19,7 +21,7 @@ const ALL_NOTIFICATIONS = [
     {
         id: 2, type: 'info', category: 'Payments',
         title: 'Invoice #1048 paid',
-        detail: 'Acme Corp settled invoice #1048 in full',
+        detail: 'NexBill Inc settled invoice #1048 in full',
         time: '16:20:05', date: 'May 16, 2026',
         amount: '$1,200.00', amountColor: '#635bff',
         meta: 'in_1P3xRz2eZ',
@@ -31,7 +33,8 @@ const ALL_NOTIFICATIONS = [
         title: 'Dispute opened',
         detail: 'A chargeback was filed on charge ch_3P4kRz2eZ. Respond before Jun 2.',
         time: '14:15:30', date: 'May 16, 2026',
-        amount: 'Due Jun 2', amountColor: '#b45309',
+        amount: 'Due Jun 2',
+        amountColor: '#b45309',
         meta: 'dp_1Oz83mXzAB',
         unread: false,
         icon: AlertTriangle,
@@ -41,7 +44,8 @@ const ALL_NOTIFICATIONS = [
         title: 'Payout initiated',
         detail: '$4,820.00 is on its way to your bank account',
         time: '09:05:12', date: 'May 15, 2026',
-        amount: 'Arrives Jun 3', amountColor: '#697386',
+        amount: 'Arrives Jun 3',
+        amountColor: '#697386',
         meta: 'po_1Pq84kRzJL',
         unread: false,
         icon: CreditCard,
@@ -51,7 +55,8 @@ const ALL_NOTIFICATIONS = [
         title: 'New subscription',
         detail: 'Marcus Webb subscribed to Plan "Starter"',
         time: '18:45:00', date: 'May 14, 2026',
-        amount: '$49.00', amountColor: '#635bff',
+        amount: '$49.00',
+        amountColor: '#635bff',
         meta: 'sub_1Pz84kRzJL',
         unread: false,
         icon: RefreshCw,
@@ -61,7 +66,8 @@ const ALL_NOTIFICATIONS = [
         title: 'Payout arrived',
         detail: '$3,210.00 was deposited into bank account ending in 4242',
         time: '11:20:15', date: 'May 14, 2026',
-        amount: '$3,210.00', amountColor: '#1a9e4e',
+        amount: '$3,210.00',
+        amountColor: '#1a9e4e',
         meta: 'po_1Nm72mXzAB',
         unread: false,
         icon: CheckCircle,
@@ -71,11 +77,66 @@ const ALL_NOTIFICATIONS = [
 const TABS = ['All', 'Payments', 'Disputes', 'Payouts'];
 
 export default function Notifications() {
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('All');
     const [notifications, setNotifications] = useState(ALL_NOTIFICATIONS);
     const [searchQuery, setSearchQuery] = useState('');
 
-    const filtered = notifications.filter(n => {
+    const { 
+        verificationStatus, 
+        currentlyDue, 
+        verificationComments, 
+        refreshVerificationStatus 
+    } = useContext(AuthContext);
+
+    useEffect(() => {
+        refreshVerificationStatus();
+    }, []);
+
+    // Prepend compliance warnings
+    const complianceNotifications = [];
+    if (verificationStatus === 'under_review') {
+        complianceNotifications.push({
+            id: 'compliance-review',
+            type: 'warn',
+            category: 'Payouts',
+            title: 'Account Verification Under Review',
+            detail: 'Our compliance team is currently reviewing your merchant documents. Payouts and settlements are temporarily locked until review completes.',
+            time: 'Just now',
+            date: 'Today',
+            amount: 'Reviewing',
+            amountColor: '#b45309',
+            meta: 'kyc_under_review',
+            unread: true,
+            icon: AlertTriangle,
+            isCompliance: true,
+            actionPath: '/activate'
+        });
+    } else if (verificationStatus === 'action_required' || verificationStatus === 'restricted') {
+        const requiredLabel = currentlyDue.length > 0 
+            ? `Required: ${currentlyDue.map(f => f.replace(/_/g, ' ')).join(', ')}` 
+            : 'Document re-upload needed';
+        complianceNotifications.push({
+            id: 'compliance-action',
+            type: 'error',
+            category: 'Payouts',
+            title: 'Verification Action Required',
+            detail: `Compliance verification failed. ${requiredLabel}. Reason: ${verificationComments || 'Provided details are incomplete or invalid.'}`,
+            time: 'Just now',
+            date: 'Today',
+            amount: 'Action Required',
+            amountColor: '#df1b41',
+            meta: 'kyc_rejected',
+            unread: true,
+            icon: AlertTriangle,
+            isCompliance: true,
+            actionPath: '/activate'
+        });
+    }
+
+    const mergedNotifications = [...complianceNotifications, ...notifications];
+
+    const filtered = mergedNotifications.filter(n => {
         const matchesTab = activeTab === 'All' || n.category === activeTab;
         const matchesSearch = n.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                              n.meta.toLowerCase().includes(searchQuery.toLowerCase());
@@ -85,6 +146,12 @@ export default function Notifications() {
     const markAllRead = () => setNotifications(prev =>
         prev.map(n => ({ ...n, unread: false }))
     );
+
+    const handleRowClick = (n) => {
+        if (n.isCompliance && n.actionPath) {
+            navigate(n.actionPath);
+        }
+    };
 
     return (
         <div className="max-w-6xl mx-auto pb-12">
@@ -151,7 +218,7 @@ export default function Notifications() {
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Date & Time</span>
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Event</span>
                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">ID</span>
-                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Amount</span>
+                    <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider text-right">Amount / Status</span>
                 </div>
 
                 {/* List Body */}
@@ -168,12 +235,14 @@ export default function Notifications() {
                             return (
                                 <div 
                                     key={n.id}
+                                    onClick={() => handleRowClick(n)}
                                     className={`group grid grid-cols-1 lg:grid-cols-[140px_1fr_160px_120px] items-center px-6 py-4 hover:bg-gray-50/50 dark:hover:bg-white/[0.01] transition-all cursor-pointer
-                                        ${n.unread ? 'relative' : ''}
+                                        ${n.unread && !n.isCompliance ? 'relative' : ''}
+                                        ${n.isCompliance ? (n.type === 'error' ? 'bg-rose-50/20 dark:bg-rose-950/10 border-l-2 border-l-rose-500' : 'bg-amber-50/20 dark:bg-amber-950/10 border-l-2 border-l-amber-500') : ''}
                                     `}
                                 >
                                     {/* Unread dot */}
-                                    {n.unread && (
+                                    {n.unread && !n.isCompliance && (
                                         <div className="absolute left-2 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-[#635bff] rounded-full shadow-[0_0_8px_rgba(99,91,255,0.6)]" />
                                     )}
 
@@ -189,11 +258,11 @@ export default function Notifications() {
 
                                     {/* Event Column */}
                                     <div className="flex items-center gap-3 mb-2 lg:mb-0">
-                                        <div className="w-8 h-8 rounded border border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.03] flex items-center justify-center text-gray-400">
+                                        <div className={`w-8 h-8 rounded border flex items-center justify-center ${n.isCompliance ? (n.type === 'error' ? 'border-rose-100 bg-rose-50 dark:border-rose-500/10 dark:bg-rose-950/20 text-rose-500' : 'border-amber-100 bg-amber-50 dark:border-amber-500/10 dark:bg-amber-950/20 text-amber-500') : 'border-gray-100 dark:border-white/5 bg-gray-50/50 dark:bg-white/[0.03] text-gray-400'}`}>
                                             <Icon size={14} />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-[13.5px] font-bold text-gray-900 dark:text-white truncate">
+                                            <p className={`text-[13.5px] font-bold truncate ${n.isCompliance ? (n.type === 'error' ? 'text-rose-600 dark:text-rose-400' : 'text-amber-600 dark:text-amber-400') : 'text-gray-900 dark:text-white'}`}>
                                                 {n.title}
                                             </p>
                                             <p className="text-[12px] text-gray-500 dark:text-gray-400 truncate">
@@ -211,7 +280,7 @@ export default function Notifications() {
 
                                     {/* Amount Column */}
                                     <div className="flex items-center justify-between lg:justify-end gap-3">
-                                        <span className="text-[13px] font-bold tabular-nums text-gray-900 dark:text-white" style={{ color: n.amountColor }}>
+                                        <span className="text-[13px] font-bold tabular-nums" style={{ color: n.amountColor }}>
                                             {n.amount}
                                         </span>
                                         <div className="opacity-0 group-hover:opacity-100 transition-opacity">
@@ -229,7 +298,7 @@ export default function Notifications() {
                 {/* Footer */}
                 <div className="px-6 py-4 bg-gray-50/50 dark:bg-white/[0.01] border-t border-gray-100 dark:border-white/5 flex items-center justify-between">
                     <span className="text-[12px] text-gray-400 font-medium">
-                        Showing {filtered.length} of {notifications.length} events
+                        Showing {filtered.length} of {mergedNotifications.length} events
                     </span>
                     <div className="flex items-center gap-2">
                         <button className="px-3 py-1 text-[12px] font-semibold text-gray-400 cursor-not-allowed">Previous</button>

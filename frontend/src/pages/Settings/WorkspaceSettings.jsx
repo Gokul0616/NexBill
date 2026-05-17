@@ -1,6 +1,10 @@
 import { useState, useEffect, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ThemeContext } from '../../context/ThemeContext';
+import { useMessage } from '../../context/MessageContext';
+import { Trash2, Plus, RefreshCw, Lock } from 'lucide-react';
+import { getCustomerFields, saveCustomerFields, resetCustomerFields } from '../../lib/customerFields';
+import Dropdown from '../../components/Dropdown';
 
 const SECTIONS = [
   { id: 'general', label: 'Business profile' },
@@ -383,6 +387,37 @@ function BillingSection() {
         </div>
       </div>
 
+      {/* Platform Usage (NexBill Revenue Source) */}
+      <div className="bg-white dark:bg-[#111] border border-[#e3e8ef] dark:border-white/10 rounded-lg overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-[#e3e8ef] dark:border-white/10">
+          <p className="text-[15px] font-semibold text-[#0a2540] dark:text-white mb-0.5">Platform usage</p>
+          <p className="text-[13px] text-[#697386] dark:text-gray-400">NexBill usage fees based on your processed volume.</p>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 gap-8 mb-6">
+            <div>
+              <p className="text-[12px] font-medium text-[#697386] dark:text-gray-500 uppercase tracking-wider mb-1.5">Total volume (May)</p>
+              <p className="text-[24px] font-bold text-[#0a2540] dark:text-white">$42,850.00</p>
+            </div>
+            <div>
+              <p className="text-[12px] font-medium text-[#697386] dark:text-gray-500 uppercase tracking-wider mb-1.5">Platform fees (0.5%)</p>
+              <p className="text-[24px] font-bold text-[#5469d4]">$214.25</p>
+            </div>
+          </div>
+          
+          <div className="flex flex-col gap-2">
+            <div className="flex justify-between items-center text-[12px]">
+              <span className="text-[#425466] dark:text-gray-400">Monthly transaction limit</span>
+              <span className="font-medium text-[#0a2540] dark:text-white">8,450 / 10,000 tx</span>
+            </div>
+            <div className="w-full h-2 bg-[#f0f2f5] dark:bg-white/5 rounded-full overflow-hidden border border-[#e3e8ef] dark:border-white/5">
+              <div className="h-full bg-[#5469d4] rounded-full transition-all duration-1000" style={{ width: '84.5%' }} />
+            </div>
+            <p className="text-[11px] text-[#697386] dark:text-gray-500 italic mt-1">You are approaching your transaction limit. Consider upgrading for unlimited processing.</p>
+          </div>
+        </div>
+      </div>
+
       {/* Payment method */}
       <div className="bg-white dark:bg-[#111] border border-[#e3e8ef] dark:border-white/10 rounded-lg overflow-hidden shadow-sm">
         <div className="px-6 py-5 border-b border-[#e3e8ef] dark:border-white/10">
@@ -612,6 +647,244 @@ function CustomerPortalSection() {
         </div>
         <SaveBar />
       </div>
+
+      <CustomerFieldsSection />
+    </div>
+  );
+}
+
+function CustomerFieldsSection() {
+  const [fields, setFields] = useState([]);
+  const [newField, setNewField] = useState({ label: '', key: '', type: 'text', placeholder: '', required: false });
+  const { showMessage } = useMessage();
+
+  useEffect(() => {
+    setFields(getCustomerFields());
+  }, []);
+
+  const handleToggle = (key) => {
+    setFields(prev => prev.map(f => {
+      if (f.key === key) {
+        if (f.key === 'name' || f.key === 'email') return f; // Locked
+        return { ...f, enabled: !f.enabled };
+      }
+      return f;
+    }));
+  };
+
+  const handleAddCustomField = (e) => {
+    e.preventDefault();
+    if (!newField.label) {
+      showMessage('Field label is required', 'error');
+      return;
+    }
+    
+    // Automatically derive key from label/field name
+    const key = newField.label.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    
+    // Check if key is a protected database column in the backend
+    const PROTECTED_COLUMNS = ['id', 'name', 'email', 'phone', 'gst_number', 'metadata', 'created_at'];
+    if (PROTECTED_COLUMNS.includes(key)) {
+      showMessage(`Field "${newField.label}" is a protected database column in the backend. Please use a different field name.`, 'error');
+      return;
+    }
+
+    if (fields.some(f => f.key === key)) {
+      showMessage(`Field "${newField.label}" already exists.`, 'error');
+      return;
+    }
+
+    const fieldToAdd = {
+      key,
+      label: newField.label,
+      type: newField.type,
+      placeholder: newField.placeholder || `Enter ${newField.label}`,
+      required: newField.required,
+      enabled: true,
+      isCustom: true
+    };
+
+    setFields(prev => [...prev, fieldToAdd]);
+    setNewField({ label: '', key: '', type: 'text', placeholder: '', required: false });
+    showMessage('Custom field added. Click "Save changes" to apply.', 'info');
+  };
+
+  const handleDeleteCustomField = (key) => {
+    setFields(prev => prev.filter(f => f.key !== key));
+    showMessage('Custom field removed. Click "Save changes" to apply.', 'info');
+  };
+
+  const handleSave = () => {
+    saveCustomerFields(fields);
+    showMessage('Customer fields configuration saved successfully!', 'success');
+  };
+
+  const handleReset = () => {
+    if (window.confirm('Are you sure you want to reset customer fields to defaults? Any custom fields will be removed.')) {
+      const defaulted = resetCustomerFields();
+      setFields(defaulted);
+      showMessage('Customer fields reset to defaults.', 'success');
+    }
+  };
+
+  return (
+    <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      {/* Configure Fields */}
+      <div className="bg-white dark:bg-[#111] border border-[#e3e8ef] dark:border-white/10 rounded-lg overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-[#e3e8ef] dark:border-white/10 flex justify-between items-center">
+          <div>
+            <p className="text-[15px] font-semibold text-[#0a2540] dark:text-white mb-0.5">Customer database fields</p>
+            <p className="text-[13px] text-[#697386] dark:text-gray-400">Configure standard fields or define custom variables that flow into customer forms and table views.</p>
+          </div>
+          <button 
+            type="button" 
+            onClick={handleReset}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[13px] font-medium text-gray-600 dark:text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 border border-gray-300 dark:border-white/10 rounded-md transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" /> Reset defaults
+          </button>
+        </div>
+        <div className="p-6">
+          <table className="w-full text-left text-[13px]">
+            <thead>
+              <tr className="border-b border-[#e3e8ef] dark:border-white/10 text-[#697386] font-medium">
+                <th className="pb-3 w-1/3">Field Name</th>
+                <th className="pb-3 w-1/4">Key</th>
+                <th className="pb-3 w-1/6">Type</th>
+                <th className="pb-3 w-1/6">Required</th>
+                <th className="pb-3 text-right">Status / Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#f0f2f5] dark:divide-white/5">
+              {fields.map(f => (
+                <tr key={f.key} className="hover:bg-[#fafbfc] dark:hover:bg-white/5 transition-colors">
+                  <td className="py-3 font-semibold text-[#0a2540] dark:text-white">
+                    {f.label}
+                    {f.isCustom && <span className="ml-2 text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded font-normal">Custom</span>}
+                  </td>
+                  <td className="py-3 font-mono text-[12px] text-[#697386] dark:text-gray-400">{f.key}</td>
+                  <td className="py-3 capitalize text-[#697386] dark:text-gray-400">{f.type}</td>
+                  <td className="py-3">
+                    <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${f.required ? 'bg-orange-100 text-orange-700 dark:bg-orange-950/20 dark:text-orange-400' : 'bg-gray-100 text-gray-600 dark:bg-white/5 dark:text-gray-400'}`}>
+                      {f.required ? 'Yes' : 'No'}
+                    </span>
+                  </td>
+                  <td className="py-3 text-right">
+                    <div className="flex items-center justify-end gap-3">
+                      {f.key === 'name' || f.key === 'email' ? (
+                        <div className="text-gray-400 p-1 flex items-center gap-1 text-[11px]">
+                          <Lock className="w-3 h-3" /> Locked
+                        </div>
+                      ) : (
+                        <>
+                          <div 
+                            onClick={() => handleToggle(f.key)}
+                            className={`w-9 h-5 rounded-full p-1 cursor-pointer transition-all ${f.enabled ? 'bg-[#5469d4]' : 'bg-[#e3e8ef] dark:bg-white/10'}`}
+                          >
+                            <div className={`w-3 h-3 bg-white rounded-full transition-all ${f.enabled ? 'translate-x-4' : 'translate-x-0'}`} />
+                          </div>
+                          {f.isCustom && (
+                            <button 
+                              type="button" 
+                              onClick={() => handleDeleteCustomField(f.key)}
+                              className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Custom SaveBar integration for Fields */}
+        <div className="px-6 py-4 border-t border-[#f0f2f5] dark:border-white/5 bg-[#fafbfc] dark:bg-[#1a1a1a] flex justify-end items-center gap-2">
+          <span className="text-[12px] text-[#697386] dark:text-gray-500 mr-auto">Save the table state to compile the custom database fields.</span>
+          <button 
+            type="button" 
+            onClick={() => setFields(getCustomerFields())}
+            className="px-4 py-1.5 text-[14px] text-[#425466] dark:text-gray-300 bg-white dark:bg-white/5 border border-[#c4cdd6] dark:border-white/10 rounded-md hover:bg-[#f6f9fc] dark:hover:bg-white/10 transition-colors"
+          >
+            Discard
+          </button>
+          <button 
+            type="button" 
+            onClick={handleSave}
+            className="px-4 py-1.5 text-[14px] font-medium text-white bg-[#5469d4] border border-[#4251b0] rounded-md hover:bg-[#4a5fc1] transition-colors"
+          >
+            Save changes
+          </button>
+        </div>
+      </div>
+
+      {/* Add Custom Field */}
+      <div className="bg-white dark:bg-[#111] border border-[#e3e8ef] dark:border-white/10 rounded-lg shadow-sm">
+        <div className="px-6 py-5 border-b border-[#e3e8ef] dark:border-white/10">
+          <p className="text-[15px] font-semibold text-[#0a2540] dark:text-white mb-0.5">Add custom schema field</p>
+          <p className="text-[13px] text-[#697386] dark:text-gray-400">Instantiate new dynamic columns to customize client profiles.</p>
+        </div>
+        <form onSubmit={handleAddCustomField} className="p-6 space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[12px] font-medium text-[#425466] dark:text-gray-400">Field Label</label>
+            <FocusInput 
+              required
+              type="text" 
+              placeholder="e.g. Company Name" 
+              value={newField.label}
+              onChange={e => setNewField(prev => ({ ...prev, label: e.target.value }))}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-5">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-[#425466] dark:text-gray-400">Field Type</label>
+              <Dropdown 
+                value={newField.type}
+                onChange={val => setNewField(prev => ({ ...prev, type: val }))}
+                options={[
+                  { value: 'text', label: 'Text (Standard)' },
+                  { value: 'number', label: 'Number' },
+                  { value: 'email', label: 'Email' },
+                  { value: 'website', label: 'Website' },
+                ]}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12px] font-medium text-[#425466] dark:text-gray-400">Placeholder Text (Optional)</label>
+              <FocusInput 
+                type="text" 
+                placeholder="e.g. Enter company name" 
+                value={newField.placeholder}
+                onChange={e => setNewField(prev => ({ ...prev, placeholder: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 py-2">
+            <input 
+              type="checkbox" 
+              id="field_required" 
+              className="rounded border-[#c4cdd6] text-[#5469d4] focus:ring-[#5469d4]"
+              checked={newField.required}
+              onChange={e => setNewField(prev => ({ ...prev, required: e.target.checked }))}
+            />
+            <label htmlFor="field_required" className="text-[13px] font-medium text-[#425466] dark:text-gray-300 cursor-pointer">
+              Mark this field as mandatory/required
+            </label>
+          </div>
+          <div className="flex justify-end pt-3">
+            <button 
+              type="submit"
+              className="flex items-center gap-1.5 px-4 py-2 bg-[#5469d4] hover:bg-[#4a5fc1] text-white text-[13px] font-medium rounded-md transition-colors"
+            >
+              <Plus className="w-4 h-4" /> Add field to queue
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -645,12 +918,6 @@ export default function WorkspaceSettings() {
           <div>
             <h1 className="text-[22px] font-bold text-[#0a2540] dark:text-white mb-1 tracking-tight">Workspace settings</h1>
             <p className="text-[13px] text-[#697386] dark:text-gray-400">Manage your company profile, branding, and billing preferences.</p>
-          </div>
-          <div className="flex gap-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f0f2ff] dark:bg-[#5469d4]/10 text-[#5469d4] text-[12px] font-semibold border border-[#5469d4]/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#5469d4] animate-pulse" />
-              Live Mode
-            </span>
           </div>
         </div>
 

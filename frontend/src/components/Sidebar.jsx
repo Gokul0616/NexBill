@@ -3,7 +3,7 @@ import {
   Bell, LayoutDashboard, Users, CreditCard, Repeat, FileText,
   Settings, Sun, Moon, LogOut, PanelLeftClose, PanelLeftOpen,
   ChevronDown, Code2, Link2, Package, BarChart2, Building2, Palette,
-  ChevronRight
+  ChevronRight, Globe
 } from 'lucide-react';
 import { useContext, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
@@ -12,11 +12,10 @@ import { useMessage } from '../context/MessageContext';
 import CustomTooltip from './CustomTooltip';
 
 export default function Sidebar() {
-  const { logout, user } = useContext(AuthContext);
+  const { logout, user, testMode, toggleTestMode } = useContext(AuthContext);
   const { theme, setTheme } = useContext(ThemeContext);
   const { showMessage } = useMessage();
   const [isExpanded, setIsExpanded] = useState(true);
-  const [testData, setTestData] = useState(false);
   const [hoveredSubmenu, setHoveredSubmenu] = useState(null); // { id, top }
   const [closeTimeout, setCloseTimeout] = useState(null);
   const navigate = useNavigate();
@@ -222,19 +221,19 @@ export default function Sidebar() {
           {/* View test data toggle */}
           {isExpanded ? (
             <button
-              onClick={() => setTestData(v => !v)}
+              onClick={toggleTestMode}
               className="flex items-center gap-2.5 px-2 py-[5px] w-full rounded-[5px] text-[13.5px] text-[#3c4257] dark:text-gray-300 hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
               <span
                 className={[
                   'relative inline-flex flex-shrink-0 rounded-full transition-colors duration-200',
-                  testData ? 'bg-[#5469d4]' : 'bg-[#c1c9d2] dark:bg-[#444]',
+                  testMode ? 'bg-[#5469d4]' : 'bg-[#c1c9d2] dark:bg-[#444]',
                 ].join(' ')}
                 style={{ width: 28, height: 16 }}
               >
                 <span
                   className="absolute top-[2px] w-3 h-3 rounded-full bg-white shadow-sm transition-transform duration-200"
-                  style={{ width: 12, height: 12, left: 2, transform: testData ? 'translateX(12px)' : 'translateX(0)' }}
+                  style={{ width: 12, height: 12, left: 2, transform: testMode ? 'translateX(12px)' : 'translateX(0)' }}
                 />
               </span>
               <span>View test data</span>
@@ -242,19 +241,19 @@ export default function Sidebar() {
           ) : (
             <CustomTooltip text="View test data" position="right" sidebar>
               <button
-                onClick={() => setTestData(v => !v)}
+                onClick={toggleTestMode}
                 className="flex justify-center items-center w-full py-[7px] rounded-[5px] hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors cursor-pointer"
               >
                 <span
                   className={[
                     'relative inline-flex flex-shrink-0 rounded-full transition-colors duration-200',
-                    testData ? 'bg-[#5469d4]' : 'bg-[#c1c9d2] dark:bg-[#444]',
+                    testMode ? 'bg-[#5469d4]' : 'bg-[#c1c9d2] dark:bg-[#444]',
                   ].join(' ')}
                   style={{ width: 24, height: 14 }}
                 >
                   <span
                     className="absolute top-[2px] rounded-full bg-white shadow-sm transition-transform duration-200"
-                    style={{ width: 10, height: 10, left: 2, transform: testData ? 'translateX(10px)' : 'translateX(0)' }}
+                    style={{ width: 10, height: 10, left: 2, transform: testMode ? 'translateX(10px)' : 'translateX(0)' }}
                   />
                 </span>
               </button>
@@ -358,10 +357,13 @@ export default function Sidebar() {
         >
 
           {hoveredSubmenu.id === 'settings' && [
-            { id: 'general', label: 'General', icon: <Building2 size={12} /> },
+            { id: 'general', label: 'Business profile', icon: <Building2 size={12} /> },
             { id: 'branding', label: 'Branding', icon: <Palette size={12} /> },
-            { id: 'billing', label: 'Billing', icon: <CreditCard size={12} /> },
+            { id: 'payments', label: 'Payments & payouts', icon: <CreditCard size={12} /> },
+            { id: 'billing', label: 'Billing & plans', icon: <FileText size={12} /> },
             { id: 'team', label: 'Team', icon: <Users size={12} /> },
+            { id: 'customer_portal', label: 'Customer portal', icon: <Globe size={12} /> },
+            { id: 'developers', label: 'Developers', icon: <Code2 size={12} /> },
           ].map(sub => (
             <NavLink
               key={sub.id}

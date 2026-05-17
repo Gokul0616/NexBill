@@ -64,24 +64,23 @@ export default function Dropdown({
                 </label>
             )}
 
-            {/* Trigger button */}
             <button
                 type="button"
                 onClick={() => setOpen((prev) => !prev)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 border rounded text-sm transition-all cursor-pointer
+                className={`w-full flex items-center justify-between px-3 py-[8px] border rounded-[5px] text-[13.5px] transition-all cursor-pointer shadow-[0_1px_1px_rgba(0,0,0,.04)]
           ${open
-                        ? 'border-[#246dff] ring-1 ring-[#246dff]'
-                        : 'border-gray-200 dark:border-[#333]'
+                        ? 'border-[#5469d4] shadow-[0_0_0_3px_rgba(84,105,212,.15)]'
+                        : 'border-[#d1d5db] dark:border-white/[0.08]'
                     }
-          bg-white dark:bg-[#111] text-gray-900 dark:text-white
-          hover:border-gray-300 dark:hover:border-[#444]
+          bg-white dark:bg-[#0d0d0e] text-[#30313d] dark:text-white
+          hover:border-gray-300 dark:hover:border-white/20
         `}
             >
-                <span className={selected ? 'text-gray-900 dark:text-white' : 'text-gray-300 dark:text-gray-600'}>
+                <span className={`block truncate text-left flex-1 ${selected ? 'text-[#30313d] dark:text-white' : 'text-[#9ea3b0]'}`}>
                     {selected ? selected.label : placeholder}
                 </span>
                 <ChevronDown
-                    className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+                    className={`w-4 h-4 text-[#9ea3b0] transition-transform duration-200 ml-2 flex-shrink-0 ${open ? 'rotate-180' : ''}`}
                 />
             </button>
 
@@ -104,7 +103,7 @@ export default function Dropdown({
                     )}
 
                     {/* Options list */}
-                    <ul className="max-h-52 overflow-y-auto py-1 scrollbar-hide">
+                    <ul className="max-h-52 overflow-y-auto py-1">
                         {filtered.length === 0 ? (
                             <li className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">No results found</li>
                         ) : (

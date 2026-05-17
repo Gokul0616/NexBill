@@ -51,7 +51,10 @@ export default function GlobalBanner() {
         )}
       </div>
       <button
-        onClick={hideBanner}
+        onClick={() => {
+          if (banner.onDismiss) banner.onDismiss();
+          hideBanner();
+        }}
         className="absolute right-4 p-1 rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-colors opacity-60 hover:opacity-100 cursor-pointer"
         aria-label="Dismiss banner"
       >

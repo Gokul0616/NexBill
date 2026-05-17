@@ -22,6 +22,15 @@ class BillingController {
             next(err);
         }
     }
+
+    async getDashboardStats(req, res, next) {
+        try {
+            const stats = await billingService.getDashboardStats();
+            res.json(stats);
+        } catch (err) {
+            next(err);
+        }
+    }
 }
 
 module.exports = new BillingController();
