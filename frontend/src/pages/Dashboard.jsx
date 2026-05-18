@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import apiClient from '../config/api';
 import DataTable from '../components/DataTable';
+import RevenueLineChart from '../components/RevenueLineChart';
 
 // ─────────────────────────────────────────────────────────────
 // Tiny bar chart (no library needed)
@@ -32,7 +33,6 @@ function MiniBarChart({ data = [], color = '#1d4ed8' }) {
     </div>
   );
 }
-
 // ─────────────────────────────────────────────────────────────
 // KPI card in the top strip
 // ─────────────────────────────────────────────────────────────
@@ -42,7 +42,7 @@ function KpiCard({ label, value, delta, sub, iconBg, icon: Icon, iconColor, last
   return (
     <div className={`flex flex-col gap-2 px-4 py-3.5 ${!last ? 'border-r border-[#e5e7eb] dark:border-white/10' : ''}`}>
       <div className="flex items-center justify-between">
-        <span className="text-[11px] font-bold uppercase tracking-[0.6px] text-[#9ca3af]">{label}</span>
+        <span className="text-[14px] font-bold text-[#111827] dark:text-white">{label}</span>
         <span
           className="w-[24px] h-[24px] rounded-[5px] flex items-center justify-center"
           style={{ backgroundColor: iconBg }}
@@ -50,7 +50,7 @@ function KpiCard({ label, value, delta, sub, iconBg, icon: Icon, iconColor, last
           <Icon className="w-3.5 h-3.5" style={{ color: iconColor }} />
         </span>
       </div>
-      <div className="text-[21px] font-black text-[#111827] dark:text-white tracking-[-0.5px] leading-none">
+      <div className="text-[21px] font-semibold text-[#111827] dark:text-white tracking-[-0.5px] leading-none">
         {value}
       </div>
       <div className="flex items-center gap-1.5">
@@ -138,7 +138,8 @@ export default function Dashboard() {
 
   const d = stats || { totalMRR: 0, pendingInvoices: 0, recentPayments: [], verificationStatus: 'pending' };
 
-  const isDemo = !d.recentPayments || d.recentPayments.length === 0;
+  const isDemo = true;
+  // const isDemo = !d.recentPayments || d.recentPayments.length === 0;
 
   const tempPayments = [
     {
@@ -174,15 +175,17 @@ export default function Dashboard() {
   // Build 18-bar dataset from real/demo data
   const barData = isDemo
     ? [
-      { v: 120 }, { v: 240 }, { v: 180 }, { v: 310 }, { v: 490 }, { v: 620 },
-      { v: 450 }, { v: 580 }, { v: 720 }, { v: 690 }, { v: 850 }, { v: 920 },
-      { v: 1100 }, { v: 980 }, { v: 1250 }, { v: 1420 }, { v: 1310 }, { v: 1789 }
+      { v: 120, date: 'Jan 1' }, { v: 240, date: 'Jan 2' }, { v: 180, date: 'Jan 3' },
+      { v: 310, date: 'Jan 4' }, { v: 490, date: 'Jan 5' }, { v: 620, date: 'Jan 6' },
+      { v: 450, date: 'Jan 7' }, { v: 580, date: 'Jan 8' }, { v: 720, date: 'Jan 9' },
+      { v: 690, date: 'Jan 10' }, { v: 850, date: 'Jan 11' }, { v: 920, date: 'Jan 12' },
+      { v: 1100, date: 'Jan 13' }, { v: 980, date: 'Jan 14' }, { v: 1250, date: 'Jan 15' },
+      { v: 1420, date: 'Jan 16' }, { v: 1310, date: 'Jan 17' }, { v: 1789, date: 'Jan 18' },
     ]
     : Array.from({ length: 18 }, (_, i) => ({
       v: i === 17 ? (d.totalMRR || 0) : 0,
+      date: `Day ${i + 1}`,
     }));
-
-
 
   return (
     <div className="mx-auto pb-6 space-y-3 font-sans">
@@ -190,15 +193,10 @@ export default function Dashboard() {
       {/* ── Topbar ── */}
       <div className="flex items-center justify-between pt-1">
         <div>
-          <div className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] mb-0.5">
-            <span>Home</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-            <span>Overview</span>
-          </div>
           <div className="flex items-center gap-2">
-            <h1 className="text-[18px] font-black text-[#111827] dark:text-white tracking-tight">Dashboard</h1>
+            <h1 className="text-[18px] font-semibold text-[#111827] dark:text-white tracking-tight">Dashboard</h1>
             {testMode && (
-              <span className="text-[10px] font-black uppercase tracking-[0.8px] bg-[#fef3c7] text-[#92400e] border border-[#fcd34d] px-1.5 py-0.5 rounded">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.8px] bg-[#fef3c7] text-[#92400e] border border-[#fcd34d] px-1.5 py-0.5 rounded">
                 Test mode
               </span>
             )}
@@ -256,32 +254,24 @@ export default function Dashboard() {
       </div>
       <div>
         {/* Volume chart */}
-        <div className="col-span-1 bg-white dark:bg-[#111] border border-[#e5e7eb] dark:border-white/10 rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-[#111] border border-[#e5e7eb] dark:border-white/10 rounded-lg overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#f3f4f6] dark:border-white/10">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#9ca3af] mb-0.5">Gross volume</p>
-              <p className="text-[18px] font-black text-[#111827] dark:text-white tracking-tight">
+              <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#9ca3af]">Gross volume</p>
+              <p className="text-[22px] font-semibold text-[#111827] dark:text-white tracking-tight">
                 ${mrrVal.toLocaleString()}
               </p>
             </div>
-            <button className="flex items-center gap-1.5 text-[12px] text-[#6b7280] border border-[#e5e7eb] dark:border-white/10 rounded px-3 py-1.5 hover:bg-[#f9fafb] dark:hover:bg-white/5 cursor-pointer transition-colors">
+            <button className="flex items-center gap-1.5 text-[12px] text-[#6b7280] border border-[#e5e7eb] dark:border-white/10 rounded px-3 py-1.5 hover:bg-[#f9fafb] dark:hover:bg-white/5">
               Daily <ChevronDown className="w-3.5 h-3.5" />
             </button>
           </div>
-          <div className="px-4 pt-3.5 pb-3.5">
-            <div className="flex gap-5 mb-3">
-              {[['Total', `$${mrrVal.toLocaleString()}`], ['Avg/day', `$${(mrrVal / 30).toFixed(2)}`], ['Peak', isDemo ? '$180' : '—']].map(([k, v]) => (
-                <div key={k}>
-                  <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#9ca3af] mb-0.5">{k}</p>
-                  <p className="text-[16px] font-black text-[#111827] dark:text-white tracking-tight">{v}</p>
-                </div>
-              ))}
-            </div>
-            <MiniBarChart data={barData} color="#1d4ed8" />
-            <div className="flex justify-between mt-1.5">
-              <span className="text-[11px] text-[#9ca3af]">May 1</span>
-              <span className="text-[11px] text-[#9ca3af]">May 18</span>
-            </div>
+
+          <div className="px-4 pt-4 pb-4">
+            <RevenueLineChart
+              data={barData}
+              color="#6366f1"
+            />
           </div>
         </div>
       </div>

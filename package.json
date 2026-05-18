@@ -20,8 +20,8 @@
     "dev:admin": "npm run dev --prefix services/admin-service",
     "dev:frontend": "npm run dev --prefix frontend",
     "dev:console": "npm run dev --prefix nexbill-console",
-    "dev:backend": "concurrently \"npm run dev:gateway\" \"npm run dev:identity\" \"npm run dev:subscription\" \"npm run dev:billing\" \"npm run dev:payment\" \"npm run dev:admin\"",
-    "dev:all": "concurrently --kill-others-on-fail \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:console\""
+    "dev:backend": "concurrently --names gateway,identity,subscription,billing,payment,admin --prefix-colors blue,green,magenta,cyan,yellow,red \"npm run dev:gateway\" \"npm run dev:identity\" \"npm run dev:subscription\" \"npm run dev:billing\" \"npm run dev:payment\" \"npm run dev:admin\"",
+    "dev:all": "concurrently --kill-others-on-fail --names backend,frontend,console --prefix-colors white,green,yellow \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:console\""
   },
   "keywords": [],
   "author": "",
