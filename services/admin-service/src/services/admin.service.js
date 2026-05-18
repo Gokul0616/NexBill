@@ -1,4 +1,5 @@
 const db = require('@nexbill/db');
+const safeId = (val) => isNaN(Number(val)) ? val : Number(val);
 
 class AdminService {
     async getAllMerchants() {
@@ -20,9 +21,9 @@ class AdminService {
         const currentlyDueStr = Array.isArray(currentlyDue) ? JSON.stringify(currentlyDue) : '[]';
         
         // 1. Ensure activation record exists
-        const { rows: actRows } = await db.query('SELECT id FROM identity.merchant_activations WHERE user_id = $1', [Number(userId)]);
+        const { rows: actRows } = await db.query('SELECT id FROM identity.merchant_activations WHERE user_id = $1', [safeId(userId)]);
         if (actRows.length === 0) {
-            await db.query('INSERT INTO identity.merchant_activations (user_id) VALUES ($1)', [Number(userId)]);
+            await db.query('INSERT INTO identity.merchant_activations (user_id) VALUES ($1)', [safeId(userId)]);
         }
 
         // 2. Update user flags & custom banners
@@ -32,7 +33,7 @@ class AdminService {
                 isBlocked === true || isBlocked === 'true' ? 'true' : 'false',
                 paymentsBlocked === true || paymentsBlocked === 'true' ? 'true' : 'false',
                 customBannerMessage || null,
-                Number(userId)
+                safeId(userId)
             ]
         );
 
@@ -45,7 +46,7 @@ class AdminService {
                 payoutsEnabled === true || payoutsEnabled === 'true' ? 'true' : 'false', 
                 currentlyDueStr, 
                 comments || '', 
-                Number(userId)
+                safeId(userId)
             ]
         );
         return { success: true };
@@ -54,7 +55,7 @@ class AdminService {
     async getMerchantBanners(userId) {
         const { rows: existingRows } = await db.query(
             'SELECT banner_key FROM identity.merchant_banners WHERE user_id = $1',
-            [Number(userId)]
+            [safeId(userId)]
         );
         if (existingRows.length === 0) {
             const defaultBanners = [
@@ -111,41 +112,55 @@ class AdminService {
 
             for (const b of defaultBanners) {
                 await db.query(
-                    'INSERT INTO identity.merchant_banners (user_id, banner_key, message, type, cta_label, cta_link) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
-                    [Number(userId), b.key, b.message, b.type, b.cta_label, b.cta_link]
+                    'INSERT INTO identity.merchant_banners (user_id, banner_key, message, type, cta_label, cta_link, is_enabled, is_dismissed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING',
+                    [safeId(userId), b.key, b.message, b.type, b.cta_label, b.cta_link, false, false]
                 );
             }
         }
 
         const { rows } = await db.query(
-            'SELECT banner_key, message, type, cta_label, cta_link, is_dismissed, is_enabled FROM identity.merchant_banners WHERE user_id = $1 ORDER BY id ASC',
-            [Number(userId)]
+            'SELECT banner_key, message, type, cta_label, cta_link, is_dismissed, is_enabled, updated_at FROM identity.merchant_banners WHERE user_id = $1 ORDER BY id ASC',
+            [safeId(userId)]
         );
         return rows;
     }
 
     async updateMerchantBanner(userId, bannerKey, { message, type, cta_label, cta_link, is_enabled, is_dismissed }) {
+        const enabledVal = is_enabled === true || is_enabled === 'true';
+        if (enabledVal) {
+            await db.query(
+                'UPDATE identity.merchant_banners SET is_enabled = $1 WHERE user_id = $2 AND banner_key != $3',
+                [false, safeId(userId), bannerKey]
+            );
+        }
         await db.query(
             'UPDATE identity.merchant_banners SET message = $1, type = $2, cta_label = $3, cta_link = $4, is_enabled = $5, is_dismissed = $6, updated_at = CURRENT_TIMESTAMP WHERE user_id = $7 AND banner_key = $8',
-            [message, type, cta_label, cta_link, is_enabled === true || is_enabled === 'true', is_dismissed === true || is_dismissed === 'true', Number(userId), bannerKey]
+            [message, type, cta_label, cta_link, enabledVal, is_dismissed === true || is_dismissed === 'true', safeId(userId), bannerKey]
         );
         return { success: true };
     }
 
     async createMerchantBanner(userId, { bannerKey, message, type, cta_label, cta_link, is_enabled, is_dismissed }) {
+        const enabledVal = is_enabled === true || is_enabled === 'true';
+        if (enabledVal) {
+            await db.query(
+                'UPDATE identity.merchant_banners SET is_enabled = $1 WHERE user_id = $2 AND banner_key != $3',
+                [false, safeId(userId), bannerKey]
+            );
+        }
         await db.query(
             'INSERT INTO identity.merchant_banners (user_id, banner_key, message, type, cta_label, cta_link, is_enabled, is_dismissed) ' +
             'VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ' +
             'ON CONFLICT (user_id, banner_key) ' +
             'DO UPDATE SET message = EXCLUDED.message, type = EXCLUDED.type, cta_label = EXCLUDED.cta_label, cta_link = EXCLUDED.cta_link, is_enabled = EXCLUDED.is_enabled, is_dismissed = EXCLUDED.is_dismissed, updated_at = CURRENT_TIMESTAMP',
             [
-                Number(userId), 
+                safeId(userId), 
                 bannerKey, 
                 message, 
                 type || 'info', 
                 cta_label || null, 
                 cta_link || null, 
-                is_enabled !== false, 
+                enabledVal, 
                 is_dismissed === true
             ]
         );

@@ -1,88 +1,121 @@
-import { Users, CreditCard, FileText, Repeat, ArrowUpRight, ArrowDownRight, Plus, ChevronDown, MoreHorizontal, Loader2, Shield, CheckCircle, ChevronRight } from 'lucide-react';
-import { useEffect, useState, useContext } from 'react';
+import {
+  Users, CreditCard, FileText, Repeat, ArrowUpRight, ArrowDownRight,
+  Plus, ChevronDown, MoreHorizontal, Loader2, CheckCircle,
+  RefreshCw, Download, Bell, Settings, Filter, Search,
+  AlertTriangle, Link, ChevronRight, LayoutGrid,
+} from 'lucide-react';
+import { useEffect, useState, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import apiClient from '../config/api';
+import DataTable from '../components/DataTable';
 
-// ── Sparkline SVG ─────────────────────────────────────────────────────────────
-function Sparkline({ data, color = '#5469d4', positive = true }) {
-  const values = data.length > 1 ? data : [0, 0];
-  const w = 120, h = 36, pad = 2;
-  const min = Math.min(...values), max = Math.max(...values);
-  const range = max - min || 1;
-  const pts = values.map((v, i) => {
-    const x = pad + (i / (values.length - 1)) * (w - pad * 2);
-    const y = pad + (1 - (v - min) / range) * (h - pad * 2);
-    return `${x},${y}`;
-  });
-  const polyline = pts.join(' ');
-  const area = `M${pts[0]} L${pts.slice(1).join(' L')} L${w - pad},${h} L${pad},${h} Z`;
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-9" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={`g-${color.replace('#', '')}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.15" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <path d={area} fill={`url(#g-${color.replace('#', '')})`} />
-      <polyline points={polyline} fill="none" stroke={color} strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-// ── Bar chart ─────────────────────────────────────────────────────────────────
-function BarChart({ data }) {
+// ─────────────────────────────────────────────────────────────
+// Tiny bar chart (no library needed)
+// ─────────────────────────────────────────────────────────────
+function MiniBarChart({ data = [], color = '#1d4ed8' }) {
   const max = Math.max(...data.map(d => d.v), 1);
   return (
-    <div className="flex items-end gap-[3px] h-24 mt-2">
+    <div className="flex items-end gap-[2px] h-[110px]">
       {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-1 group">
-          <div
-            className="w-full rounded-sm bg-[#e6e9f0] dark:bg-[#222] group-hover:bg-[#5469d4] transition-colors"
-            style={{ height: `${Math.max(4, (d.v / max) * 88)}px` }}
-            title={`$${d.v.toLocaleString()}`}
-          />
-        </div>
+        <div
+          key={i}
+          className="flex-1 rounded-[2px] transition-colors hover:opacity-80 cursor-pointer"
+          style={{
+            height: `${Math.max(3, (d.v / max) * 100)}px`,
+            backgroundColor: color,
+            opacity: d.v === 0 ? 0.12 : 0.9,
+          }}
+          title={`$${d.v.toLocaleString()}`}
+        />
       ))}
     </div>
   );
 }
 
-const statusStyle = {
-  paid: 'bg-[#d4edda] text-[#1a6430] dark:bg-green-900/30 dark:text-green-400',
-  refunded: 'bg-[#fff3cd] text-[#856404] dark:bg-yellow-900/30 dark:text-yellow-400',
-  unpaid: 'bg-[#f8d7da] text-[#721c24] dark:bg-red-900/30 dark:text-red-400',
-};
-
-// ── Stat card ─────────────────────────────────────────────────────────────────
-function StatCard({ title, value, change, spark, color }) {
-  const up = change.startsWith('+');
+// ─────────────────────────────────────────────────────────────
+// KPI card in the top strip
+// ─────────────────────────────────────────────────────────────
+function KpiCard({ label, value, delta, sub, iconBg, icon: Icon, iconColor, last }) {
+  const neutral = !delta || delta === '—';
+  const up = delta?.startsWith('+');
   return (
-    <div className="bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-lg p-4 flex flex-col gap-3">
+    <div className={`flex flex-col gap-2 px-4 py-3.5 ${!last ? 'border-r border-[#e5e7eb] dark:border-white/10' : ''}`}>
       <div className="flex items-center justify-between">
-        <span className="text-[13px] text-[#697386] dark:text-gray-400 font-medium">{title}</span>
-        <span className={`flex items-center gap-0.5 text-[12px] font-semibold ${up ? 'text-[#1a6430] dark:text-green-400' : 'text-[#9e2a2b] dark:text-red-400'}`}>
-          {up ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
-          {change}
+        <span className="text-[11px] font-bold uppercase tracking-[0.6px] text-[#9ca3af]">{label}</span>
+        <span
+          className="w-[24px] h-[24px] rounded-[5px] flex items-center justify-center"
+          style={{ backgroundColor: iconBg }}
+        >
+          <Icon className="w-3.5 h-3.5" style={{ color: iconColor }} />
         </span>
       </div>
-      <div className="text-[22px] font-bold text-[#1a1f36] dark:text-white tracking-tight leading-none">
+      <div className="text-[21px] font-black text-[#111827] dark:text-white tracking-[-0.5px] leading-none">
         {value}
       </div>
-      <Sparkline data={spark} color={color} positive={up} />
+      <div className="flex items-center gap-1.5">
+        {delta && (
+          <span className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded ${neutral ? 'bg-[#f3f4f6] text-[#6b7280]' :
+            up ? 'bg-[#d1fae5] text-[#065f46]' : 'bg-[#fee2e2] text-[#991b1b]'
+            }`}>
+            {!neutral && (up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />)}
+            {delta}
+          </span>
+        )}
+        <span className="text-[11px] text-[#9ca3af]">{sub}</span>
+      </div>
     </div>
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// Status badge
+// ─────────────────────────────────────────────────────────────
+const statusCfg = {
+  paid: { cls: 'bg-[#d1fae5] text-[#065f46] dark:bg-green-900/30 dark:text-green-400', dot: 'bg-[#059669]' },
+  refunded: { cls: 'bg-[#dbeafe] text-[#1e40af] dark:bg-blue-900/30 dark:text-blue-400', dot: 'bg-[#3b82f6]' },
+  unpaid: { cls: 'bg-[#fef3c7] text-[#92400e] dark:bg-amber-900/30 dark:text-amber-400', dot: 'bg-[#f59e0b]' },
+  failed: { cls: 'bg-[#fee2e2] text-[#991b1b] dark:bg-red-900/30 dark:text-red-400', dot: 'bg-[#ef4444]' },
+};
+
+// Slightly smaller status badge
+function StatusBadge({ status }) {
+  const cfg = statusCfg[status] || statusCfg.unpaid;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide ${cfg.cls}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+      {status}
+    </span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Main Dashboard
+// ─────────────────────────────────────────────────────────────
+const PERIODS = [
+  { key: 'today', label: 'Today' },
+  { key: '7d', label: '7d' },
+  { key: '30d', label: '30d' },
+  { key: '90d', label: '90d' },
+];
+
+const QUICK_ACTIONS = [
+  { icon: Users, label: 'Add customer', sub: 'Create a new profile', bg: '#eff6ff', ic: '#3b82f6' },
+  { icon: Repeat, label: 'New subscription', sub: 'Enroll into a plan', bg: '#faf5ff', ic: '#a855f7' },
+  { icon: FileText, label: 'Create invoice', sub: 'One-off or recurring', bg: '#f0fdf4', ic: '#22c55e' },
+  { icon: CreditCard, label: 'Create plan', sub: 'Set up pricing tier', bg: '#fff7ed', ic: '#f97316' },
+  { icon: Link, label: 'Payment link', sub: 'Share to collect payment', bg: '#f0f9ff', ic: '#0891b2' },
+];
+
 export default function Dashboard() {
   const { testMode } = useContext(AuthContext);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState('30d');
   const navigate = useNavigate();
 
   const fetchData = async () => {
+    setLoading(true);
     try {
       const res = await apiClient.get('/invoices/stats');
       setStats(res.data);
@@ -93,131 +126,419 @@ export default function Dashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <Loader2 className="w-8 h-8 animate-spin text-[#5469d4]" />
+        <Loader2 className="w-5 h-5 animate-spin text-[#1d4ed8]" />
       </div>
     );
   }
 
-  const data = stats || { totalMRR: 0, pendingInvoices: 0, recentPayments: [], isActivated: false, verificationStatus: 'pending' };
+  const d = stats || { totalMRR: 0, pendingInvoices: 0, recentPayments: [], verificationStatus: 'pending' };
+
+  const isDemo = !d.recentPayments || d.recentPayments.length === 0;
+
+  const tempPayments = [
+    {
+      id: 'tx_982468',
+      customer_name: 'Gokul',
+      customer_email: 'gokul@gmail.com',
+      amount: '1250.00',
+      status: 'paid',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'tx_327891',
+      customer_name: 'Jane Doe',
+      customer_email: 'jane@example.com',
+      amount: '450.00',
+      status: 'paid',
+      created_at: new Date(Date.now() - 3600000 * 4).toISOString()
+    },
+    {
+      id: 'tx_781290',
+      customer_name: 'John Smith',
+      customer_email: 'john@example.com',
+      amount: '89.00',
+      status: 'failed',
+      created_at: new Date(Date.now() - 3600000 * 24).toISOString()
+    }
+  ];
+
+  const paymentsData = isDemo ? tempPayments : d.recentPayments;
+  const mrrVal = d.totalMRR || 1789.00;
+  const pendingVal = d.pendingInvoices || 2;
+
+  // Build 18-bar dataset from real/demo data
+  const barData = isDemo
+    ? [
+      { v: 120 }, { v: 240 }, { v: 180 }, { v: 310 }, { v: 490 }, { v: 620 },
+      { v: 450 }, { v: 580 }, { v: 720 }, { v: 690 }, { v: 850 }, { v: 920 },
+      { v: 1100 }, { v: 980 }, { v: 1250 }, { v: 1420 }, { v: 1310 }, { v: 1789 }
+    ]
+    : Array.from({ length: 18 }, (_, i) => ({
+      v: i === 17 ? (d.totalMRR || 0) : 0,
+    }));
+
+
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 font-sans animate-in fade-in duration-500">
+    <div className="mx-auto pb-6 space-y-3 font-sans">
 
-
-      {/* ── Page header ── */}
+      {/* ── Topbar ── */}
       <div className="flex items-center justify-between pt-1">
         <div>
+          <div className="flex items-center gap-1.5 text-[12px] text-[#9ca3af] mb-0.5">
+            <span>Home</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span>Overview</span>
+          </div>
           <div className="flex items-center gap-2">
-            <h1 className="text-[18px] font-bold text-[#1a1f36] dark:text-white tracking-tight">Home</h1>
+            <h1 className="text-[18px] font-black text-[#111827] dark:text-white tracking-tight">Dashboard</h1>
             {testMode && (
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-[#fff3cd] text-[#856404] px-1.5 py-0.5 rounded border border-[#ffeeba]">Test Mode</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.8px] bg-[#fef3c7] text-[#92400e] border border-[#fcd34d] px-1.5 py-0.5 rounded">
+                Test mode
+              </span>
             )}
           </div>
-          <p className="text-[13px] text-[#697386] dark:text-gray-400 mt-0.5">{new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
         </div>
-        <button className="flex items-center gap-1.5 px-3 py-1.5 bg-[#5469d4] hover:bg-[#4a5fc1] text-white text-[13px] font-medium rounded-md transition-colors">
-          <Plus className="w-3.5 h-3.5" />
-          New
-          <ChevronDown className="w-3.5 h-3.5 opacity-70" />
-        </button>
+        <div className="flex items-center gap-2">
+          <div className="w-px h-5 bg-[#e5e7eb] dark:bg-white/10" />
+          <button
+            onClick={fetchData}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold text-[#374151] dark:text-gray-300 bg-white dark:bg-white/5 border border-[#e5e7eb] dark:border-white/10 rounded-md hover:bg-[#f9fafb] dark:hover:bg-white/10 cursor-pointer transition-colors"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Refresh
+          </button>
+          <button className="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-semibold text-[#374151] dark:text-gray-300 bg-white dark:bg-white/5 border border-[#e5e7eb] dark:border-white/10 rounded-md hover:bg-[#f9fafb] dark:hover:bg-white/10 cursor-pointer transition-colors">
+            <Download className="w-3 h-3" />
+            Export
+          </button>
+          <button className="flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-bold text-white bg-[#1d4ed8] hover:bg-[#1e40af] rounded-md cursor-pointer transition-colors">
+            <Plus className="w-3.5 h-3.5" />
+            New payment
+            <ChevronDown className="w-3.5 h-3.5 opacity-60" />
+          </button>
+        </div>
       </div>
 
-      {/* ── Stat cards ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard title="Total volume" value={`$${data.totalMRR.toLocaleString()}`} change="+0%" spark={[0, 0, 0, data.totalMRR]} color="#5469d4" />
-        <StatCard title="Pending invoices" value={data.pendingInvoices} change="+0%" spark={[0, 0, data.pendingInvoices]} color="#e5484d" />
-        <StatCard title="Total customers" value="--" change="+0%" spark={[0, 0]} color="#1a9c6a" />
-        <StatCard title="Net revenue" value={`$${data.totalMRR.toLocaleString()}`} change="+0%" spark={[0, 0, 0, data.totalMRR]} color="#5469d4" />
-      </div>
-
-      {/* ── Revenue chart + quick actions ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <div className="lg:col-span-2 bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-lg p-4">
-          <div className="flex items-start justify-between mb-1">
-            <div>
-              <p className="text-[13px] text-[#697386] dark:text-gray-400 font-medium">Gross volume</p>
-              <p className="text-[22px] font-bold text-[#1a1f36] dark:text-white tracking-tight mt-0.5">${data.totalMRR.toLocaleString()}</p>
-            </div>
-            <div className="flex items-center gap-1 text-[12px] text-[#697386] dark:text-gray-400 border border-[#e3e8ee] dark:border-white/10 rounded-md px-2 py-1 cursor-pointer hover:bg-[#f6f9fc] dark:hover:bg-white/5">
-              Current month <ChevronDown className="w-3 h-3" />
-            </div>
-          </div>
-          <BarChart data={[{ v: data.totalMRR }]} />
-        </div>
-
-        <div className="bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-lg p-4 flex flex-col gap-2">
-          <p className="text-[13px] font-semibold text-[#1a1f36] dark:text-white mb-1">Quick actions</p>
-          {[
-            { icon: Users, label: 'Add customer', sub: 'Create a new profile' },
-            { icon: Repeat, label: 'New subscription', sub: 'Enroll into a plan' },
-            { icon: FileText, label: 'Generate invoice', sub: 'One-off or recurring' },
-            { icon: CreditCard, label: 'Create plan', sub: 'Set up pricing tier' },
-          ].map(({ icon: Icon, label, sub }) => (
-            <button key={label} className="flex items-center gap-3 px-2.5 py-2 w-full text-left rounded-md hover:bg-[#f6f9fc] dark:hover:bg-white/5 transition-colors group cursor-pointer">
-              <div className="w-7 h-7 flex items-center justify-center rounded-md bg-[#f6f9fc] dark:bg-white/5 border border-[#e3e8ee] dark:border-white/10 flex-shrink-0">
-                <Icon className="w-3.5 h-3.5 text-[#697386] dark:text-gray-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[13px] font-medium text-[#3c4257] dark:text-gray-200 group-hover:text-[#5469d4] transition-colors leading-tight">{label}</p>
-                <p className="text-[11px] text-[#a3acb9] dark:text-gray-500 leading-tight">{sub}</p>
-              </div>
+      {/* ── Period bar ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-0.5 bg-white dark:bg-white/5 border border-[#e5e7eb] dark:border-white/10 rounded-lg p-1">
+          {PERIODS.map(p => (
+            <button
+              key={p.key}
+              onClick={() => setPeriod(p.key)}
+              className={`text-[12px] font-bold px-3.5 py-1.5 rounded-[5px] cursor-pointer transition-all ${period === p.key
+                ? 'bg-[#1d4ed8] text-white'
+                : 'text-[#6b7280] hover:bg-[#f3f4f6] dark:hover:bg-white/10 hover:text-[#374151] dark:hover:text-gray-300'
+                }`}
+            >
+              {p.label}
             </button>
           ))}
         </div>
+        <span className="text-[12px] text-[#9ca3af]">
+          {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} · UTC+05:30
+        </span>
       </div>
 
-      {/* ── Recent transactions ── */}
-      <div className="bg-white dark:bg-[#111] border border-[#e3e8ee] dark:border-white/10 rounded-lg overflow-hidden shadow-sm">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[#e3e8ee] dark:border-white/10">
-          <p className="text-[13px] font-semibold text-[#1a1f36] dark:text-white">Recent payments</p>
-          <button className="text-[13px] text-[#5469d4] hover:text-[#4a5fc1] font-medium transition-colors">View all →</button>
+      {/* ── KPI strip ── */}
+      <div className="bg-white dark:bg-[#111] border border-[#e5e7eb] dark:border-white/10 rounded-lg overflow-hidden grid grid-cols-5">
+        <KpiCard label="Gross volume" value={`$${mrrVal.toLocaleString()}`} delta={isDemo ? "+12.4%" : "+0%"} sub="vs last period" iconBg="#eff6ff" icon={ArrowUpRight} iconColor="#3b82f6" />
+        <KpiCard label="Net revenue" value={`$${(mrrVal * 0.971 - pendingVal * 30).toLocaleString(undefined, { maximumFractionDigits: 2 })}`} delta={isDemo ? "+9.8%" : "+0%"} sub="after fees" iconBg="#f0fdf4" icon={CheckCircle} iconColor="#22c55e" />
+        <KpiCard label="Pending invoices" value={pendingVal} delta={isDemo ? "-4" : "—"} sub="outstanding" iconBg="#fffbeb" icon={FileText} iconColor="#f59e0b" />
+        <KpiCard label="New customers" value={isDemo ? "14" : "—"} delta={isDemo ? "+15%" : "—"} sub="this period" iconBg="#faf5ff" icon={Users} iconColor="#a855f7" />
+        <KpiCard label="Success rate" value={isDemo ? "94.6%" : "—%"} sub={isDemo ? "35 payments" : "no transactions"} iconBg="#f0fdf4" icon={CheckCircle} iconColor="#22c55e" last />
+      </div>
+      <div>
+        {/* Volume chart */}
+        <div className="col-span-1 bg-white dark:bg-[#111] border border-[#e5e7eb] dark:border-white/10 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#f3f4f6] dark:border-white/10">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#9ca3af] mb-0.5">Gross volume</p>
+              <p className="text-[18px] font-black text-[#111827] dark:text-white tracking-tight">
+                ${mrrVal.toLocaleString()}
+              </p>
+            </div>
+            <button className="flex items-center gap-1.5 text-[12px] text-[#6b7280] border border-[#e5e7eb] dark:border-white/10 rounded px-3 py-1.5 hover:bg-[#f9fafb] dark:hover:bg-white/5 cursor-pointer transition-colors">
+              Daily <ChevronDown className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <div className="px-4 pt-3.5 pb-3.5">
+            <div className="flex gap-5 mb-3">
+              {[['Total', `$${mrrVal.toLocaleString()}`], ['Avg/day', `$${(mrrVal / 30).toFixed(2)}`], ['Peak', isDemo ? '$180' : '—']].map(([k, v]) => (
+                <div key={k}>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.5px] text-[#9ca3af] mb-0.5">{k}</p>
+                  <p className="text-[16px] font-black text-[#111827] dark:text-white tracking-tight">{v}</p>
+                </div>
+              ))}
+            </div>
+            <MiniBarChart data={barData} color="#1d4ed8" />
+            <div className="flex justify-between mt-1.5">
+              <span className="text-[11px] text-[#9ca3af]">May 1</span>
+              <span className="text-[11px] text-[#9ca3af]">May 18</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* ── Mid row: chart + methods + activity ── */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* Payment methods */}
+        <div className="bg-white dark:bg-[#111] border border-[#e5e7eb] dark:border-white/10 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#f3f4f6] dark:border-white/10">
+            <p className="text-[13px] font-bold text-[#111827] dark:text-white">Payment methods</p>
+            <span className="text-[12px] text-[#9ca3af]">by volume</span>
+          </div>
+          <div className="px-4 py-3.5">
+            {/* Segment bar */}
+            <div className="flex h-1.5 rounded-full overflow-hidden gap-px mb-2.5">
+              {[['#1d4ed8', '60%'], ['#7c3aed', '25%'], ['#0891b2', '10%'], ['#d1d5db', '5%']].map(([c, w], i) => (
+                <div key={i} className="rounded-sm" style={{ width: w, background: c }} />
+              ))}
+            </div>
+            <div className="flex gap-3.5 flex-wrap mb-4">
+              {[['#1d4ed8', 'Card 60%'], ['#7c3aed', 'Bank 25%'], ['#0891b2', 'Wallet 10%'], ['#d1d5db', 'Other 5%']].map(([c, l]) => (
+                <span key={l} className="flex items-center gap-1 text-[11px] text-[#6b7280]">
+                  <span className="w-2 h-2 rounded-sm" style={{ background: c }} />
+                  {l}
+                </span>
+              ))}
+            </div>
+            {/* Bar breakdown */}
+            {[['Visa', '#1d4ed8', 0], ['Mastercard', '#7c3aed', 0], ['UPI', '#0891b2', 0], ['NetBanking', '#d1d5db', 0]].map(([label, color, pct]) => (
+              <div key={label} className="flex items-center gap-2 mb-2">
+                <span className="text-[12px] text-[#6b7280] w-22 text-right">{label}</span>
+                <div className="flex-1 h-[6px] bg-[#f3f4f6] dark:bg-white/10 rounded-full overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+                </div>
+                <span className="text-[12px] font-bold text-[#111827] dark:text-white w-8 text-right">0%</span>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-[#e3e8ee] dark:border-white/10 bg-[#fafbfc] dark:bg-white/2">
-              {['Amount', 'Customer', 'Date', 'Status', ''].map((h, i) => (
-                <th key={i} className="px-4 py-2.5 text-left text-[11px] font-semibold uppercase tracking-wide text-[#8792a2] dark:text-gray-500">
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.recentPayments.length === 0 ? (
-              <tr><td colSpan="5" className="px-4 py-8 text-center text-[13px] text-[#697386]">No recent payments found.</td></tr>
-            ) : data.recentPayments.map((tx, i) => (
-              <tr key={i} className="border-b border-[#f6f9fc] dark:border-white/5 last:border-0 hover:bg-[#f6f9fc] dark:hover:bg-white/3 transition-colors cursor-pointer">
-                <td className="px-4 py-3 text-[13px] font-bold text-[#1a1f36] dark:text-white whitespace-nowrap">${parseFloat(tx.amount).toLocaleString()}</td>
-                <td className="px-4 py-3">
-                  <p className="text-[13px] text-[#3c4257] dark:text-gray-200 font-medium leading-tight">{tx.customer_name}</p>
-                  <p className="text-[11px] text-[#a3acb9] dark:text-gray-500">{tx.customer_email}</p>
-                </td>
-                <td className="px-4 py-3 text-[13px] text-[#697386] dark:text-gray-400 whitespace-nowrap">
-                  {new Date(tx.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusStyle[tx.status] || statusStyle.unpaid}`}>
-                    {tx.status === 'paid' && <span className="w-1.5 h-1.5 rounded-full bg-current mr-1 opacity-70" />}
-                    {tx.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <button className="p-1 text-[#a3acb9] hover:text-[#3c4257] dark:hover:text-gray-200 transition-colors rounded">
-                    <MoreHorizontal className="w-4 h-4" />
-                  </button>
-                </td>
-              </tr>
+        {/* Activity feed */}
+        <div className="bg-white dark:bg-[#111] border border-[#e5e7eb] dark:border-white/10 rounded-lg overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#f3f4f6] dark:border-white/10">
+            <p className="text-[13px] font-bold text-[#111827] dark:text-white">Activity feed</p>
+            <span className="w-2 h-2 rounded-full bg-[#22c55e]" title="Live" />
+          </div>
+          <div className="flex-1 px-4 py-2.5">
+            {[
+              { color: '#f59e0b', text: <><span className="font-semibold text-[#111827] dark:text-white">Verification pending</span> — complete KYC to enable payouts</>, time: 'Now' },
+              { color: '#3b82f6', text: <><span className="font-semibold text-[#111827] dark:text-white">Test mode</span> active — payments are simulated</>, time: 'Today' },
+              { color: '#a855f7', text: <>Account created. <span className="font-semibold text-[#111827] dark:text-white">Add your first product</span> to start</>, time: 'May 18' },
+              { color: '#d1d5db', text: <>Stripe webhook endpoint <span className="font-semibold text-[#111827] dark:text-white">not configured</span></>, time: 'May 17' },
+            ].map((item, i) => (
+              <div key={i} className="flex items-start gap-2.5 py-2 border-b border-[#f9fafb] dark:border-white/5 last:border-0">
+                <span className="w-[7px] h-[7px] rounded-full mt-1.5 flex-shrink-0" style={{ background: item.color }} />
+                <p className="flex-1 text-[12px] text-[#374151] dark:text-gray-400 leading-snug">{item.text}</p>
+                <span className="text-[11px] text-[#9ca3af] whitespace-nowrap">{item.time}</span>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+          <div className="px-4 py-3.5 border-t border-[#f3f4f6] dark:border-white/10">
+            <button className="w-full text-[12px] font-semibold text-[#374151] dark:text-gray-300 bg-white dark:bg-white/5 border border-[#e5e7eb] dark:border-white/10 rounded-md py-1.5 hover:bg-[#f9fafb] dark:hover:bg-white/10 cursor-pointer transition-colors">
+              View all activity
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Payments table ── */}
+      <DataTable
+        title="Payments"
+        idKey="id"
+        data={paymentsData}
+        withSearch
+        withSelection
+        withColumnVisibility
+        withExport
+        defaultPageSize={5}
+        pageSizeOptions={[5, 10, 20]}
+        columns={[
+          {
+            key: 'id',
+            label: 'ID',
+            sortable: true,
+            width: 92,
+            render: (val, row, i) => (
+              <span className="font-mono text-[11px] text-[#9ca3af]">
+                #{String(val || i + 1001).slice(-6)}
+              </span>
+            )
+          },
+          {
+            key: 'customer_name',
+            label: 'Customer',
+            sortable: true,
+            width: 170,
+            render: (val, row, i) => {
+              const initials = (val || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+              const avatarColors = ['#eff6ff|#3b82f6', '#f0fdf4|#22c55e', '#faf5ff|#a855f7', '#fff7ed|#f97316'];
+              const [abg, afc] = avatarColors[i % avatarColors.length].split('|');
+              return (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-6.5 h-6.5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                    style={{ background: abg, color: afc }}
+                  >
+                    {initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[12.5px] font-semibold text-[#111827] dark:text-white truncate">{val}</p>
+                    <p className="text-[11px] text-[#9ca3af] truncate">{row.customer_email}</p>
+                  </div>
+                </div>
+              );
+            }
+          },
+          {
+            key: 'amount',
+            label: 'Amount',
+            sortable: true,
+            align: 'right',
+            width: 90,
+            render: (val) => {
+              const amt = parseFloat(val) || 0;
+              return `$${amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+          },
+          {
+            key: 'fee',
+            label: 'Fee',
+            sortable: false,
+            align: 'right',
+            width: 62,
+            render: (val, row) => {
+              const amt = parseFloat(row.amount) || 0;
+              const fee = +(amt * 0.029 + 0.30).toFixed(2);
+              return `$${fee.toFixed(2)}`;
+            }
+          },
+          {
+            key: 'net',
+            label: 'Net',
+            sortable: false,
+            align: 'right',
+            width: 82,
+            render: (val, row) => {
+              const amt = parseFloat(row.amount) || 0;
+              const fee = +(amt * 0.029 + 0.30).toFixed(2);
+              const net = +(amt - fee).toFixed(2);
+              return `$${net.toFixed(2)}`;
+            }
+          },
+          {
+            key: 'method',
+            label: 'Method',
+            sortable: false,
+            width: 78,
+            render: () => (
+              <span className="flex items-center gap-1 text-[12px] text-[#6b7280] dark:text-gray-400">
+                <CreditCard className="w-3 h-3" />
+                Card
+              </span>
+            )
+          },
+          {
+            key: 'created_at',
+            label: 'Date',
+            sortable: true,
+            width: 76,
+            render: (val) => new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            sortable: true,
+            width: 78,
+            render: (val) => <StatusBadge status={val} />
+          }
+        ]}
+        filters={[
+          {
+            key: 'status',
+            label: 'Status',
+            options: [
+              { value: 'paid', label: 'Paid' },
+              { value: 'failed', label: 'Failed' },
+              { value: 'unpaid', label: 'Unpaid' },
+              { value: 'refunded', label: 'Refunded' }
+            ]
+          }
+        ]}
+        rowActions={(row) => [
+          { label: 'View payment details', onClick: () => navigate(`/payments/${row.id}`) }
+        ]}
+      />
+
+      {/* ── Bottom row: account status + quick actions ── */}
+      <div className="grid grid-cols-2 gap-3">
+
+        {/* Account & payouts */}
+        <div className="bg-white dark:bg-[#111] border border-[#e5e7eb] dark:border-white/10 rounded-lg overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#f3f4f6] dark:border-white/10">
+            <p className="text-[13px] font-bold text-[#111827] dark:text-white">Account &amp; payouts</p>
+            <button className="text-[12px] font-semibold text-[#374151] dark:text-gray-300 border border-[#e5e7eb] dark:border-white/10 rounded-md px-3 py-1.5 hover:bg-[#f9fafb] dark:hover:bg-white/10 cursor-pointer transition-colors">
+              Manage
+            </button>
+          </div>
+          <div className="px-4 py-3.5">
+            {d.verificationStatus !== 'verified' && (
+              <div className="flex items-start gap-2.5 bg-[#fffbeb] border border-[#fcd34d] rounded-md p-3 mb-3">
+                <AlertTriangle className="w-4 h-4 text-[#d97706] flex-shrink-0 mt-0.5" />
+                <p className="text-[12px] text-[#92400e] leading-snug">
+                  <span className="font-bold">Action required:</span> Complete identity verification to enable payouts and live payments.
+                </p>
+              </div>
+            )}
+            {[
+              ['Payments', <span className="flex items-center gap-1.5 text-[#059669] font-semibold"><CheckCircle className="w-3.5 h-3.5" /> Active (test)</span>],
+              ['Payouts', <span className="flex items-center gap-1.5 text-[#d97706] font-semibold"><AlertTriangle className="w-3.5 h-3.5" /> Restricted</span>],
+              ['Payout schedule', <span className="font-semibold text-[#111827] dark:text-white">2 business days</span>],
+              ['Next payout', <span className="font-semibold text-[#111827] dark:text-white">—</span>],
+              ['Bank account', <span className="font-semibold text-[#111827] dark:text-white">Not connected</span>],
+            ].map(([key, val]) => (
+              <div key={key} className="flex items-center justify-between py-2 border-b border-[#f3f4f6] dark:border-white/5 last:border-0">
+                <span className="text-[12.5px] text-[#6b7280] dark:text-gray-400">{key}</span>
+                <span className="text-[12.5px]">{val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div className="bg-white dark:bg-[#111] border border-[#e5e7eb] dark:border-white/10 rounded-lg overflow-hidden">
+          <div className="px-4 py-3.5 border-b border-[#f3f4f6] dark:border-white/10">
+            <p className="text-[13px] font-bold text-[#111827] dark:text-white">Quick actions</p>
+          </div>
+          <div className="px-2.5 py-2.5">
+            {QUICK_ACTIONS.map(({ icon: Icon, label, sub, bg, ic }) => (
+              <button
+                key={label}
+                className="flex items-center gap-3 w-full px-2.5 py-2 rounded-md hover:bg-[#f9fafb] dark:hover:bg-white/5 transition-colors group text-left cursor-pointer"
+              >
+                <div
+                  className="w-8 h-8 rounded-[7px] flex items-center justify-center flex-shrink-0"
+                  style={{ background: bg }}
+                >
+                  <Icon className="w-4 h-4" style={{ color: ic }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold text-[#111827] dark:text-white group-hover:text-[#1d4ed8] transition-colors">{label}</p>
+                  <p className="text-[11px] text-[#9ca3af]">{sub}</p>
+                </div>
+                <ChevronRight className="w-3.5 h-3.5 text-[#d1d5db] group-hover:text-[#1d4ed8] transition-colors" />
+              </button>
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );

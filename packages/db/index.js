@@ -139,9 +139,10 @@ class Database {
             // Extract WHERE clause
             const whereMatch = text.match(/WHERE\s+(.+?)(?:\s+ORDER|$)/i);
             if (whereMatch) {
-                const whereParts = whereMatch[1].split(' AND ');
+                const whereParts = whereMatch[1].split(/\s+AND\s+/i);
                 whereParts.forEach(part => {
                     const eqMatch = part.match(/(\w+)\s*=\s*\$(\d+)/);
+                    const neMatch = part.match(/(\w+)\s*!=\s*\$(\d+)/) || part.match(/(\w+)\s*<>\s*\$(\d+)/);
                     if (eqMatch) {
                         const field = eqMatch[1];
                         let val = params[parseInt(eqMatch[2]) - 1];
@@ -150,6 +151,13 @@ class Database {
                             val = Number(val);
                         }
                         filter[field] = val;
+                    } else if (neMatch) {
+                        const field = neMatch[1];
+                        let val = params[parseInt(neMatch[2]) - 1];
+                        if ((field === 'id' || field.endsWith('_id')) && !isNaN(val) && val !== null) {
+                            val = Number(val);
+                        }
+                        filter[field] = { $ne: val };
                     }
                 });
             }
@@ -199,7 +207,8 @@ class Database {
                     doc[f] = val;
                 });
                 
-                doc.id = Math.floor(Math.random() * 1000000);
+                const { randomUUID } = require('crypto');
+                doc.id = randomUUID();
                 doc.created_at = new Date();
                 docs.push(doc);
             }
@@ -230,15 +239,26 @@ class Database {
             });
 
             let filter = {};
-            const eqMatch = whereMatch[1].match(/(\w+)\s*=\s*\$(\d+)/);
-            if (eqMatch) {
-                const field = eqMatch[1];
-                let val = params[parseInt(eqMatch[2]) - 1];
-                if ((field === 'id' || field.endsWith('_id')) && !isNaN(val) && val !== null) {
-                    val = Number(val);
+            const whereParts = whereMatch[1].split(/\s+AND\s+/i);
+            whereParts.forEach(part => {
+                const eqMatch = part.match(/(\w+)\s*=\s*\$(\d+)/);
+                const neMatch = part.match(/(\w+)\s*!=\s*\$(\d+)/) || part.match(/(\w+)\s*<>\s*\$(\d+)/);
+                if (eqMatch) {
+                    const field = eqMatch[1];
+                    let val = params[parseInt(eqMatch[2]) - 1];
+                    if ((field === 'id' || field.endsWith('_id')) && !isNaN(val) && val !== null) {
+                        val = Number(val);
+                    }
+                    filter[field] = val;
+                } else if (neMatch) {
+                    const field = neMatch[1];
+                    let val = params[parseInt(neMatch[2]) - 1];
+                    if ((field === 'id' || field.endsWith('_id')) && !isNaN(val) && val !== null) {
+                        val = Number(val);
+                    }
+                    filter[field] = { $ne: val };
                 }
-                filter[field] = val;
-            }
+            });
 
             await collection.updateOne(filter, { $set: updateFields });
             return await collection.find(filter).toArray();

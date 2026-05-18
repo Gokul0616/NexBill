@@ -95,7 +95,7 @@ export default function Register() {
     }
     try {
       const res = await apiClient.post('/auth/register', {
-        email,
+        email: email.trim().toLowerCase(),
         password,
         name: fullName,
         company: companyName,

@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('@nexbill/db');
+const safeId = (val) => isNaN(Number(val)) ? val : Number(val);
 const config = require('../config');
 
 class AuthService {
@@ -77,9 +78,9 @@ class AuthService {
         const last4 = activeBankAccount ? activeBankAccount.slice(-4) : null;
         
         // 1. Ensure activation record exists
-        const { rows: actRows } = await db.query('SELECT id FROM identity.merchant_activations WHERE user_id = $1', [Number(userId)]);
+        const { rows: actRows } = await db.query('SELECT id FROM identity.merchant_activations WHERE user_id = $1', [safeId(userId)]);
         if (actRows.length === 0) {
-            await db.query('INSERT INTO identity.merchant_activations (user_id) VALUES ($1)', [Number(userId)]);
+            await db.query('INSERT INTO identity.merchant_activations (user_id) VALUES ($1)', [safeId(userId)]);
         }
 
         // 2. Update the separate merchant_activations table
@@ -108,7 +109,7 @@ class AuthService {
                 account_name, account_type, ifsc, JSON.stringify(beneficial_owners),
                 full_name, dob, accept_international === true || accept_international === 'true' ? 'true' : 'false',
                 pan_doc_url, business_proof_url,
-                Number(userId)
+                safeId(userId)
             ]
         );
         
@@ -124,12 +125,12 @@ class AuthService {
             'a.pan_doc_url, a.business_proof_url ' +
             'FROM identity.users u LEFT JOIN identity.merchant_activations a ON u.id = a.user_id ' +
             'WHERE u.id = $1',
-            [Number(userId)]
+            [safeId(userId)]
         );
         // Reset dismissed status for review banners when they resubmit
         await db.query(
             "UPDATE identity.merchant_banners SET is_dismissed = false WHERE user_id = $1 AND banner_key IN ('live-verification-review', 'live-verification-action')",
-            [Number(userId)]
+            [safeId(userId)]
         );
 
         return mergedRows[0];
@@ -143,14 +144,14 @@ class AuthService {
             'a.verification_status, a.charges_enabled, a.payouts_enabled, a.currently_due, a.verification_comments ' +
             'FROM identity.users u LEFT JOIN identity.merchant_activations a ON u.id = a.user_id ' +
             'WHERE u.id = $1',
-            [Number(userId)]
+            [safeId(userId)]
         );
 
         const status = rows[0] || null;
         if (status) {
             const { rows: bannerRows } = await db.query(
-                'SELECT banner_key, message, type, cta_label, cta_link, is_dismissed, is_enabled FROM identity.merchant_banners WHERE user_id = $1',
-                [Number(userId)]
+                'SELECT banner_key, message, type, cta_label, cta_link, is_dismissed, is_enabled, updated_at FROM identity.merchant_banners WHERE user_id = $1',
+                [safeId(userId)]
             );
             status.banners = bannerRows;
         }
@@ -158,7 +159,7 @@ class AuthService {
     }
 
     async ensureMerchantBanners(userId) {
-        const { rows } = await db.query('SELECT id FROM identity.merchant_banners WHERE user_id = $1', [Number(userId)]);
+        const { rows } = await db.query('SELECT id FROM identity.merchant_banners WHERE user_id = $1', [safeId(userId)]);
         if (rows.length === 0) {
             const defaultBanners = [
                 {
@@ -214,8 +215,8 @@ class AuthService {
 
             for (const b of defaultBanners) {
                 await db.query(
-                    'INSERT INTO identity.merchant_banners (user_id, banner_key, message, type, cta_label, cta_link) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
-                    [Number(userId), b.key, b.message, b.type, b.cta_label, b.cta_link]
+                    'INSERT INTO identity.merchant_banners (user_id, banner_key, message, type, cta_label, cta_link, is_enabled, is_dismissed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) ON CONFLICT DO NOTHING',
+                    [safeId(userId), b.key, b.message, b.type, b.cta_label, b.cta_link, false, false]
                 );
             }
         }
@@ -224,7 +225,7 @@ class AuthService {
     async dismissBanner(userId, bannerKey) {
         await db.query(
             'UPDATE identity.merchant_banners SET is_dismissed = true, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND banner_key = $2',
-            [Number(userId), bannerKey]
+            [safeId(userId), bannerKey]
         );
         return { success: true };
     }

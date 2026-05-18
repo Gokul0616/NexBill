@@ -57,20 +57,27 @@ function ProtectedRoute({ children, minimal = false }) {
       if (!b) return null;
       
       const isEnabled = b.is_enabled === true || b.is_enabled === 'true' || b.is_enabled === 't';
-      const isDismissed = b.is_dismissed === true || b.is_dismissed === 'true' || b.is_dismissed === 't';
+      let isDismissed = b.is_dismissed === true || b.is_dismissed === 'true' || b.is_dismissed === 't';
       
-      // Core system banners ignore the dismissal flag to remain persistently visible
-      const nonDismissibleKeys = [
-        'account-suspended',
-        'test-mode',
-        'live-verification-review',
-        'live-verification-action',
-        'live-activation-required'
-      ];
+      if (isDismissed) {
+        if (b.updated_at && b.updated_at !== 'CURRENT_TIMESTAMP') {
+          const dismissTime = new Date(b.updated_at).getTime();
+          const now = new Date().getTime();
+          const oneDayMs = 24 * 60 * 60 * 1000;
+          if (now - dismissTime < oneDayMs) {
+            // Dismissed less than 24 hours ago, hide it
+            return null;
+          } else {
+            // More than 24 hours ago, show it again
+            isDismissed = false;
+          }
+        } else {
+          // If dismissed but no valid timestamp, hide it
+          return null;
+        }
+      }
       
-      const shouldCheckDismissal = !nonDismissibleKeys.includes(key);
-      
-      if (isEnabled && (!shouldCheckDismissal || !isDismissed)) {
+      if (isEnabled && !isDismissed) {
         return b;
       }
       return null;
@@ -93,17 +100,46 @@ function ProtectedRoute({ children, minimal = false }) {
 
     const activeCustomBanner = banners.find(b => {
       const isEnabled = b.is_enabled === true || b.is_enabled === 'true' || b.is_enabled === 't';
-      const isDismissed = b.is_dismissed === true || b.is_dismissed === 'true' || b.is_dismissed === 't';
+      let isDismissed = b.is_dismissed === true || b.is_dismissed === 'true' || b.is_dismissed === 't';
+      
+      if (isDismissed) {
+        if (b.updated_at && b.updated_at !== 'CURRENT_TIMESTAMP') {
+          const dismissTime = new Date(b.updated_at).getTime();
+          const now = new Date().getTime();
+          const oneDayMs = 24 * 60 * 60 * 1000;
+          if (now - dismissTime < oneDayMs) {
+            return false;
+          } else {
+            isDismissed = false;
+          }
+        } else {
+          return false;
+        }
+      }
       const isSystem = ['account-suspended', 'custom-admin-announcement', 'live-verification-review', 'live-verification-action', 'test-mode', 'verified-success', 'live-activation-required'].includes(b.banner_key);
       return isEnabled && !isDismissed && !isSystem;
     });
 
-    if (isBlocked && suspendedBanner) {
+    // Helper to determine the behavior of CTA links (e.g. support mailto:, tel:, http://, https://, or internal routes)
+    const handleCtaClick = (link) => {
+      if (!link) return;
+      if (link.startsWith('mailto:') || link.startsWith('tel:')) {
+        window.location.href = link;
+      } else if (link.startsWith('http://') || link.startsWith('https://')) {
+        window.open(link, '_blank', 'noopener,noreferrer');
+      } else {
+        navigate(link);
+      }
+    };
+
+    // Priority order: suspended → custom → admin message → review → action_required → test → verified → activation
+    // Banners display immediately once enabled by the admin console override
+    if (suspendedBanner) {
       showBanner(
         suspendedBanner.banner_key,
         suspendedBanner.message,
         suspendedBanner.type,
-        suspendedBanner.cta_label ? { label: suspendedBanner.cta_label, onClick: () => navigate(suspendedBanner.cta_link) } : null,
+        suspendedBanner.cta_label ? { label: suspendedBanner.cta_label, onClick: () => handleCtaClick(suspendedBanner.cta_link) } : null,
         () => dismissBanner(suspendedBanner.banner_key)
       );
     } else if (activeCustomBanner) {
@@ -111,26 +147,26 @@ function ProtectedRoute({ children, minimal = false }) {
         activeCustomBanner.banner_key,
         activeCustomBanner.message,
         activeCustomBanner.type,
-        activeCustomBanner.cta_label ? { label: activeCustomBanner.cta_label, onClick: () => navigate(activeCustomBanner.cta_link) } : null,
+        activeCustomBanner.cta_label ? { label: activeCustomBanner.cta_label, onClick: () => handleCtaClick(activeCustomBanner.cta_link) } : null,
         () => dismissBanner(activeCustomBanner.banner_key)
       );
-    } else if (customBannerMessage && adminBanner) {
+    } else if (adminBanner) {
       showBanner(
         adminBanner.banner_key,
         customBannerMessage || adminBanner.message,
         adminBanner.type,
-        adminBanner.cta_label ? { label: adminBanner.cta_label, onClick: () => navigate(adminBanner.cta_link) } : null,
+        adminBanner.cta_label ? { label: adminBanner.cta_label, onClick: () => handleCtaClick(adminBanner.cta_link) } : null,
         () => dismissBanner(adminBanner.banner_key)
       );
-    } else if (verificationStatus === 'under_review' && reviewBanner) {
+    } else if (reviewBanner) {
       showBanner(
         reviewBanner.banner_key,
         reviewBanner.message,
         reviewBanner.type,
-        reviewBanner.cta_label ? { label: reviewBanner.cta_label, onClick: () => navigate(reviewBanner.cta_link) } : null,
+        reviewBanner.cta_label ? { label: reviewBanner.cta_label, onClick: () => handleCtaClick(reviewBanner.cta_link) } : null,
         () => dismissBanner(reviewBanner.banner_key)
       );
-    } else if (verificationStatus === 'action_required' && actionBanner) {
+    } else if (actionBanner) {
       const displayMsg = verificationComments 
         ? `Action Required: Verification Paused. ${verificationComments}` 
         : actionBanner.message;
@@ -138,31 +174,31 @@ function ProtectedRoute({ children, minimal = false }) {
         actionBanner.banner_key,
         displayMsg,
         actionBanner.type,
-        actionBanner.cta_label ? { label: actionBanner.cta_label, onClick: () => navigate(actionBanner.cta_link) } : null,
+        actionBanner.cta_label ? { label: actionBanner.cta_label, onClick: () => handleCtaClick(actionBanner.cta_link) } : null,
         () => dismissBanner(actionBanner.banner_key)
       );
-    } else if (testMode && testBanner) {
+    } else if (testBanner) {
       showBanner(
         testBanner.banner_key,
         testBanner.message,
         testBanner.type,
-        testBanner.cta_label ? { label: testBanner.cta_label, onClick: () => navigate(testBanner.cta_link) } : null,
+        testBanner.cta_label ? { label: testBanner.cta_label, onClick: () => handleCtaClick(testBanner.cta_link) } : null,
         () => dismissBanner(testBanner.banner_key)
       );
-    } else if (verificationStatus === 'verified' && verifiedBanner) {
+    } else if (verifiedBanner) {
       showBanner(
         verifiedBanner.banner_key,
         verifiedBanner.message,
         verifiedBanner.type,
-        verifiedBanner.cta_label ? { label: verifiedBanner.cta_label, onClick: () => navigate(verifiedBanner.cta_link) } : null,
+        verifiedBanner.cta_label ? { label: verifiedBanner.cta_label, onClick: () => handleCtaClick(verifiedBanner.cta_link) } : null,
         () => dismissBanner(verifiedBanner.banner_key)
       );
-    } else if (verificationStatus === 'pending' && !testMode && activationBanner) {
+    } else if (activationBanner) {
       showBanner(
         activationBanner.banner_key,
         activationBanner.message,
         activationBanner.type,
-        activationBanner.cta_label ? { label: activationBanner.cta_label, onClick: () => navigate(activationBanner.cta_link) } : null,
+        activationBanner.cta_label ? { label: activationBanner.cta_label, onClick: () => handleCtaClick(activationBanner.cta_link) } : null,
         () => dismissBanner(activationBanner.banner_key)
       );
     } else {

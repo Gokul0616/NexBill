@@ -1,4 +1,5 @@
 const adminService = require('../services/admin.service');
+const safeId = (val) => isNaN(Number(val)) ? val : Number(val);
 
 class AdminController {
     async getMerchants(req, res, next) {
@@ -19,7 +20,7 @@ class AdminController {
 
         try {
             const result = await adminService.verifyMerchant(
-                userId, 
+                safeId(userId), 
                 verificationStatus, 
                 chargesEnabled, 
                 payoutsEnabled, 
@@ -41,7 +42,7 @@ class AdminController {
             return res.status(400).json({ success: false, error: 'userId is required' });
         }
         try {
-            const banners = await adminService.getMerchantBanners(Number(userId));
+            const banners = await adminService.getMerchantBanners(safeId(userId));
             res.json({ success: true, banners });
         } catch (err) {
             next(err);
@@ -54,7 +55,7 @@ class AdminController {
             return res.status(400).json({ success: false, error: 'userId and bannerKey are required' });
         }
         try {
-            const result = await adminService.updateMerchantBanner(Number(userId), bannerKey, req.body);
+            const result = await adminService.updateMerchantBanner(safeId(userId), bannerKey, req.body);
             res.json({ success: true, ...result });
         } catch (err) {
             next(err);
@@ -67,7 +68,7 @@ class AdminController {
             return res.status(400).json({ success: false, error: 'userId is required' });
         }
         try {
-            const result = await adminService.createMerchantBanner(Number(userId), req.body);
+            const result = await adminService.createMerchantBanner(safeId(userId), req.body);
             res.json({ success: true, ...result });
         } catch (err) {
             next(err);
